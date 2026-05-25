@@ -1,0 +1,23 @@
+.DS_Store
+
+### Maven ###
+**/target/
+
+### Eclipse/STS ###
+.project
+.classpath
+.settings/
+.factorypath
+.apt_generated
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea/
+*.iml
+*.ipr
+*.iws
+
+### VS Code ###
+.vscode/
+
