@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class RoleMasterSearchBean extends AbstractSearchBean{
-	
+	private long id;
 	private static final long serialVersionUID = 1L;
 	private String roleName;
 
