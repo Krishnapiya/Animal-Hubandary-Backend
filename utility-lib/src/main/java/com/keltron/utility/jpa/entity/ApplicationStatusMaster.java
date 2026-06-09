@@ -82,5 +82,9 @@ public class ApplicationStatusMaster extends AbstractEntity {
         payload.setId(id);
         payload.setName(statusName);
         return payload;
+        
+    }
+    public ApplicationStatusMaster(Long id) {
+        this.id = id;
     }
 }
