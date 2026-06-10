@@ -83,4 +83,8 @@ public class PaymentStatusMaster extends AbstractEntity {
         payload.setName(statusName);
         return payload;
     }
+
+    public PaymentStatusMaster(Long id) {
+        this.id = id;
+    }
 }
