@@ -89,4 +89,8 @@ public class DocumentType extends AbstractEntity {
 
         return payload;
     }
+
+    public DocumentType(Long documentTypeId) {
+        this.id = documentTypeId;
+    }
 }
