@@ -77,11 +77,12 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		
 		<dependency>
-			<groupId>com.keltron</groupId>
-			<artifactId>admin-service</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
+    <groupId>com.keltron</groupId>
+    <artifactId>utility-lib</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+</dependency>
 		
 	</dependencies>
 	<dependencyManagement>

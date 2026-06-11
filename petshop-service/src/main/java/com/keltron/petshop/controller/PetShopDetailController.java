@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.*;
 
 import com.keltron.petshop.services.impl.PetShopDetailServiceImpl;
 import com.keltron.utility.ResponseBuilder;
-import com.keltron.utility.beans.dto.PetShopDetailDto;
-import com.keltron.utility.beans.searchbean.PetShopDetailSearchBean;
-import com.keltron.utility.jpa.predicates.PetShopDetailPredicates;
+import com.keltron.petshop.dto.PetShopDetailDto;
+import com.keltron.petshop.searchbean.PetShopDetailSearchBean;
+import com.keltron.petshop.predicates.PetShopDetailPredicates;
 import com.keltron.utility.requests.Request;
 import com.keltron.utility.responses.AbstractResponse;
 import com.keltron.utility.web.controller.abs.AbstractController;
