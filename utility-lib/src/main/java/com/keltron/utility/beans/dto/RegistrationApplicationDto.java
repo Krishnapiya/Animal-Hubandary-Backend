@@ -7,6 +7,7 @@ import org.springframework.http.HttpMethod;
 import com.keltron.utility.ValidationUtils;
 import com.keltron.utility.beans.abs.AbstractDto;
 import com.keltron.utility.jpa.entity.RegistrationApplication;
+import com.keltron.utility.responses.payload.DropdownPayload;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -33,6 +34,8 @@ public class RegistrationApplicationDto extends AbstractDto {
 
     private LocalDateTime submittedAt;
     private LocalDateTime forwardedToCvoAt;
+    private DropdownPayload<Long> status;
+    private DropdownPayload<Integer> district;
 
     @Override
     public RegistrationApplication toEntity() {
@@ -63,5 +66,17 @@ public class RegistrationApplicationDto extends AbstractDto {
 
         return getErrors() == null
                 || getErrors().isEmpty();
+    }
+    @Override
+    public String toString() {
+        return "RegistrationApplicationDto{" +
+                "id=" + id +
+                ", applicationNumber='" + applicationNumber + '\'' +
+                ", statusId=" + statusId +
+                ", districtId=" + districtId +
+                ", applicantUserId=" + applicantUserId +
+                ", assignedOfficeId=" + assignedOfficeId +
+                ", cvOfficeId=" + cvOfficeId +
+                '}';
     }
 }

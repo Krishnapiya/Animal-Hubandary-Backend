@@ -56,18 +56,11 @@ public class RegistrationApplicationController
                                 .toDTO())
                 .build();
     }
-
     @PatchMapping("/save")
     public ResponseEntity<AbstractResponse> update(
             @Valid @RequestBody Request<RegistrationApplicationDto> request) {
 
-        if (!(request.isValid()
-                && request.getPayLoad().isValid(HttpMethod.PATCH))) {
-
-            return new ResponseBuilder()
-                    .withError(HttpStatus.BAD_REQUEST)
-                    .build();
-        }
+        System.out.println("PATCH DTO = " + request.getPayLoad());
 
         return new ResponseBuilder()
                 .withData(
@@ -77,6 +70,27 @@ public class RegistrationApplicationController
                                 .toDTO())
                 .build();
     }
+
+//    @PatchMapping("/save")
+//    public ResponseEntity<AbstractResponse> update(
+//            @Valid @RequestBody Request<RegistrationApplicationDto> request) {
+//
+//        if (!(request.isValid()
+//                && request.getPayLoad().isValid(HttpMethod.PATCH))) {
+//
+//            return new ResponseBuilder()
+//                    .withError(HttpStatus.BAD_REQUEST)
+//                    .build();
+//        }
+//
+//        return new ResponseBuilder()
+//                .withData(
+//                        serviceImpl.update(
+//                                request.getPayLoad().getId(),
+//                                request.getPayLoad())
+//                                .toDTO())
+//                .build();
+//    }
 
     @GetMapping("/list/all")
     public ResponseEntity<AbstractResponse> findByCriteria(

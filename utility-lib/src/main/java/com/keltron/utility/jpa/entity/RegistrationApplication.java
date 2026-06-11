@@ -95,10 +95,21 @@ public class RegistrationApplication extends AbstractEntity {
 
         if (ValidationUtils.isValid(appDto.getDistrictId()))
             this.district = new District(appDto.getDistrictId());
+        if (appDto.getApplicantUserId() != null) {
+            this.applicantUserId = appDto.getApplicantUserId();
+        }
 
-        this.applicantUserId = appDto.getApplicantUserId();
-        this.assignedOfficeId = appDto.getAssignedOfficeId();
-        this.cvOfficeId = appDto.getCvOfficeId();
+        if (appDto.getAssignedOfficeId() != null) {
+            this.assignedOfficeId = appDto.getAssignedOfficeId();
+        }
+
+        if (appDto.getCvOfficeId() != null) {
+            this.cvOfficeId = appDto.getCvOfficeId();
+        }
+
+//        this.applicantUserId = appDto.getApplicantUserId();
+//        this.assignedOfficeId = appDto.getAssignedOfficeId();
+//        this.cvOfficeId = appDto.getCvOfficeId();
         this.paymentId = appDto.getPaymentId();
         this.submittedAt = appDto.getSubmittedAt();
         this.forwardedToCvoAt = appDto.getForwardedToCvoAt();
@@ -116,11 +127,15 @@ public class RegistrationApplication extends AbstractEntity {
         dto.setEntityType(entityType);
         dto.setApplicationKind(applicationKind);
 
-        if (status != null)
+        if (status != null) {
             dto.setStatusId(status.getId());
+            dto.setStatus(status.toDropDownPayload());
+        }
 
-        if (district != null)
+        if (district != null) {
             dto.setDistrictId(district.getId());
+            dto.setDistrict(district.toDropDownPayload());
+        }
 
         dto.setApplicantUserId(applicantUserId);
         dto.setAssignedOfficeId(assignedOfficeId);
