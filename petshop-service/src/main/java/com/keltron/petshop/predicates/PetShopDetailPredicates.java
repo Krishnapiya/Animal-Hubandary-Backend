@@ -1,4 +1,4 @@
-package com.keltron.utility.jpa.predicates;
+package com.keltron.petshop.predicates;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,8 +6,8 @@ import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.keltron.utility.ValidationUtils;
-import com.keltron.utility.beans.searchbean.PetShopDetailSearchBean;
-import com.keltron.utility.jpa.entity.PetShopDetail;
+import com.keltron.petshop.searchbean.PetShopDetailSearchBean;
+import com.keltron.petshop.entity.PetShopDetail;
 
 import jakarta.persistence.criteria.Predicate;
 

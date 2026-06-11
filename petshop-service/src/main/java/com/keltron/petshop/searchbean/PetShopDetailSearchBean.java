@@ -1,4 +1,4 @@
-package com.keltron.utility.beans.searchbean;
+package com.keltron.petshop.searchbean;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,10 +1,10 @@
-package com.keltron.utility.jpa.entity;
+package com.keltron.petshop.entity;
 
 import java.math.BigDecimal;
-
+import com.keltron.utility.jpa.entity.AbstractEntity;
 import com.keltron.utility.ValidationUtils;
 import com.keltron.utility.beans.abs.AbstractDto;
-import com.keltron.utility.beans.dto.PetShopDetailDto;
+import com.keltron.petshop.dto.PetShopDetailDto;
 import com.keltron.utility.responses.payload.DropdownPayload;
 
 import jakarta.persistence.*;

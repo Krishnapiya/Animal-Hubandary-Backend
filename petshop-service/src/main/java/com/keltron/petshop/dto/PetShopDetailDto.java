@@ -1,4 +1,4 @@
-package com.keltron.utility.beans.dto;
+package com.keltron.petshop.dto;
 
 import java.math.BigDecimal;
 
@@ -6,8 +6,7 @@ import org.springframework.http.HttpMethod;
 
 import com.keltron.utility.ValidationUtils;
 import com.keltron.utility.beans.abs.AbstractDto;
-import com.keltron.utility.jpa.entity.PetShopDetail;
-
+import com.keltron.petshop.entity.PetShopDetail;
 import lombok.Getter;
 import lombok.Setter;
 
