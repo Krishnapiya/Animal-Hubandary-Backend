@@ -4,4 +4,6 @@ import com.keltron.petshop.entity.PetShopDetail;
 import com.keltron.utility.jpa.repository.AbstractRepository;
 public interface PetShopDetailRepository
         extends AbstractRepository<PetShopDetail, Long> {
+
+    java.util.Optional<PetShopDetail> findByApplicationId(Long applicationId);
 }

@@ -7,7 +7,9 @@ import com.example.springSecurity.dto.LoginDto;
 import com.example.springSecurity.dto.RegisterDto;
 import com.example.springSecurity.entity.AppUser;
 import com.example.springSecurity.repository.AppUserRepository;
+import com.example.springSecurity.dto.PetShopOwnerRegisterDto;
 import com.example.springSecurity.service.ChangePasswordService;
+import com.example.springSecurity.service.PetShopOwnerRegistrationService;
 import com.keltron.utility.jpa.entity.Users;
 import com.keltron.utility.requests.Request;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
@@ -64,6 +66,7 @@ public class AppUserController {
     AuthenticationManager authenticationManager;
     
     private final ChangePasswordService changePasswordService;
+    private final PetShopOwnerRegistrationService petShopOwnerRegistrationService;
  
 //    @PostMapping("/register")
 //	public ResponseEntity<Object> register(
@@ -87,6 +90,34 @@ public class AppUserController {
     
     
 //    
+    @PostMapping("/register-pet-shop-owner")
+    public ResponseEntity<Object> registerPetShopOwner(
+            @RequestBody PetShopOwnerRegisterDto registerDto) {
+
+        var validationErrors = petShopOwnerRegistrationService.validate(registerDto);
+        if (!validationErrors.isEmpty()) {
+            return ResponseEntity.badRequest().body(validationErrors);
+        }
+
+        Users savedUser;
+        try {
+            savedUser = petShopOwnerRegistrationService.register(registerDto);
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of("detail", ex.getMessage()));
+        }
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        registerDto.getUsername(),
+                        registerDto.getPassword()));
+
+        String jwtToken = createJwtToken(savedUser);
+        var response = new HashMap<String, Object>();
+        response.put("token", jwtToken);
+        response.put("user", savedUser.toDTO());
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/login")
 	public ResponseEntity<Object> login(
 			@RequestBody LoginDto loginDto){
@@ -98,7 +129,7 @@ public class AppUserController {
 		var response = new HashMap<String, Object>();
 
 		response.put("token", jwtToken);
-		response.put("user", appUser);
+		response.put("user", appUser.get().toDTO());
 		
 		return ResponseEntity.ok(response);
 		

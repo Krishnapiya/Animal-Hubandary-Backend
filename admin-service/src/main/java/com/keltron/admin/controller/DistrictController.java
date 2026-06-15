@@ -4,9 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import com.keltron.admin.rbac.security.RequirePermission;
 import com.keltron.admin.services.impl.DistrictServiceImpl;
 import com.keltron.utility.ResponseBuilder;
 import com.keltron.utility.beans.dto.DistrictDto;
@@ -20,13 +20,13 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("admin/auth/master/district")
-@PreAuthorize("hasRole('ADMIN')")
 public class DistrictController extends AbstractController {
 
     @Autowired
     private DistrictServiceImpl serviceImpl;
 
     @PostMapping("/save")
+    @RequirePermission(menu = "district", action = "save")
     public ResponseEntity<AbstractResponse> save(
             @Valid @RequestBody Request<DistrictDto> request) {
 
@@ -47,6 +47,7 @@ public class DistrictController extends AbstractController {
     }
 
     @PatchMapping("/save")
+    @RequirePermission(menu = "district", action = "edit")
     public ResponseEntity<AbstractResponse> update(
             @Valid @RequestBody Request<DistrictDto> request) {
 
@@ -68,6 +69,7 @@ public class DistrictController extends AbstractController {
     }
 
     @GetMapping("/list/all")
+    @RequirePermission(menu = "district", action = "list")
     public ResponseEntity<AbstractResponse> findByCriteria(
             @RequestParam(
                     name = "dropDown",
@@ -77,6 +79,9 @@ public class DistrictController extends AbstractController {
 
             @Valid DistrictSearchBean searchBean) {
 
+        int pageNo = searchBean.getPageNo() != null ? searchBean.getPageNo() : 0;
+        int pageSize = searchBean.getPageSize() != null ? searchBean.getPageSize() : 25;
+
         return asDropdown
                 ? new ResponseBuilder()
                         .withData(
@@ -84,8 +89,8 @@ public class DistrictController extends AbstractController {
                                         DistrictPredicates.createPredicate(searchBean),
                                         searchBean.getDataSort(),
                                         asDropdown,
-                                        searchBean.getPageNo(),
-                                        searchBean.getPageSize()))
+                                        pageNo,
+                                        pageSize))
                         .build()
 
                 : new ResponseBuilder()
@@ -93,12 +98,13 @@ public class DistrictController extends AbstractController {
                                 serviceImpl.findByCriteria(
                                         DistrictPredicates.createPredicate(searchBean),
                                         searchBean.getDataSort(),
-                                        searchBean.getPageNo(),
-                                        searchBean.getPageSize()))
+                                        pageNo,
+                                        pageSize))
                         .build();
     }
 
     @DeleteMapping("/delete/{id}")
+    @RequirePermission(menu = "district", action = "delete")
     public ResponseEntity<AbstractResponse> delete(
             @PathVariable Integer id) {
 

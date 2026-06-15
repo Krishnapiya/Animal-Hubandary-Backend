@@ -6,12 +6,17 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableJpaAuditing
 @EnableScheduling
 @SpringBootApplication
 @EnableDiscoveryClient
+@EnableJpaRepositories(basePackages = {
+        "com.keltron.petshop.repository",
+        "com.keltron.utility.jpa.repository"
+})
 @ComponentScan(basePackages = { "com.keltron.petshop", "com.keltron.utility" })
 @EntityScan(basePackages = {
 	    "com.keltron.utility.jpa.entity",  // Ensure this is the correct package

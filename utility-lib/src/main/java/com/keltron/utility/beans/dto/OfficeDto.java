@@ -20,6 +20,10 @@ public class OfficeDto extends AbstractDto {
     private Integer parentId;
     /** Read-only for list/detail responses */
     private String parentName;
+    /** FK to awb.district — for CVO / district offices */
+    private Long districtId;
+    /** Read-only for list/detail responses */
+    private String districtName;
 
     @Override
     public Office toEntity() {
@@ -38,6 +42,7 @@ public class OfficeDto extends AbstractDto {
         } else {
             entity.setParent(null);
         }
+        entity.setDistrictId(districtId);
         return entity;
     }
 

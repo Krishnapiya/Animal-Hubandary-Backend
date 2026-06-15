@@ -44,6 +44,10 @@ public class Office extends AbstractEntity {
     @JoinColumn(name = "parent_id")
     private Office parent;
 
+    /** Geographic district (awb.district). NULL for Head Office; set for CVO / district offices. */
+    @Column(name = "district_id")
+    private Long districtId;
+
     @Override
     public <K extends AbstractDto> void copyFromDTO(K dto) {
         OfficeDto d = (OfficeDto) dto;
@@ -67,6 +71,11 @@ public class Office extends AbstractEntity {
         } else {
             parent = null;
         }
+        if (ValidationUtils.isValid(d.getDistrictId())) {
+            districtId = d.getDistrictId();
+        } else {
+            districtId = null;
+        }
     }
 
     @Override
@@ -82,6 +91,7 @@ public class Office extends AbstractEntity {
             dto.setParentId(null);
             dto.setParentName(null);
         }
+        dto.setDistrictId(districtId);
         return dto;
     }
 

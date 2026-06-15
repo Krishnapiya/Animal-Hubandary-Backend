@@ -8,10 +8,15 @@ import com.keltron.utility.jpa.entity.RoleMaster;
 import com.keltron.utility.jpa.entity.Users;
 import com.keltron.utility.jpa.repository.UsersRepository;
 import com.example.springSecurity.repository.AppUserRepository;
+import com.example.springSecurity.repository.RoleMasterRepository;
 
 @SpringBootApplication
 @EntityScan(basePackageClasses = { Users.class, RoleMaster.class })
-@EnableJpaRepositories(basePackageClasses = { AppUserRepository.class, UsersRepository.class })
+@EnableJpaRepositories(basePackageClasses = {
+        AppUserRepository.class,
+        UsersRepository.class,
+        RoleMasterRepository.class
+})
 public class SpringSecurityApplication {
 
 	public static void main(String[] args) {

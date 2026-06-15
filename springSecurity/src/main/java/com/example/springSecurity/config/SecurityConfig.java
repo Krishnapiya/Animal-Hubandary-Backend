@@ -8,8 +8,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -36,7 +36,13 @@ public class SecurityConfig {
 
         return http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                		 .requestMatchers("/auth/login", "/auth/register").permitAll() 
+                        .requestMatchers(HttpMethod.POST,
+                                "/auth/login",
+                                "/auth/register",
+                                "/auth/register-pet-shop-owner")
+                        .permitAll()
+                        .requestMatchers("/auth/login", "/auth/register**")
+                        .permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
