@@ -107,7 +107,8 @@ public class DogBreederDetail extends AbstractEntity {
                 dogBreederDetailDto.getTotalDogsCount();
     }
 
-    @Override
+    @SuppressWarnings("unchecked")
+	@Override
     public DogBreederDetailDto toDTO() {
 
         DogBreederDetailDto dto =
