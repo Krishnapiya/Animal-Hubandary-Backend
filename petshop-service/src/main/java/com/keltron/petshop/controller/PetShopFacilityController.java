@@ -103,7 +103,17 @@ public class PetShopFacilityController
                                 pageSize))
                 .build();
     }
+    
+    @GetMapping("/draft/{petShopDetailId}")
+    public ResponseEntity<AbstractResponse> getDraft(
+            @PathVariable Long petShopDetailId) {
 
+        return new ResponseBuilder()
+                .withData(
+                        serviceImpl.getDraft(
+                                petShopDetailId))
+                .build();
+    }
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<AbstractResponse> delete(
             @PathVariable Long id) {

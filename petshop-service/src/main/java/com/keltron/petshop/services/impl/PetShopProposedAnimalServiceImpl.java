@@ -48,4 +48,16 @@ public class PetShopProposedAnimalServiceImpl extends AbstractJpaService<
 	public PetShopProposedAnimal update(Long id, PetShopProposedAnimalDto dto) {
 		return super.update(id, dto);
 	}
+	
+	@Transactional(readOnly = true)
+	public List<PetShopProposedAnimalDto> getDraft(
+	        Long applicationId) {
+
+	    return petShopProposedAnimalRepository
+	            .findByApplication_IdOrderByDisplayOrderAsc(
+	                    applicationId)
+	            .stream()
+	            .map(PetShopProposedAnimal::toDTO)
+	            .toList();
+	}
 }

@@ -6,6 +6,7 @@ import com.keltron.petshop.dto.PetShopProposedAnimalDto;
 import com.keltron.utility.ValidationUtils;
 import com.keltron.utility.beans.abs.AbstractDto;
 import com.keltron.utility.jpa.entity.AbstractEntity;
+import com.keltron.utility.jpa.entity.AnimalSpecies;
 import com.keltron.utility.jpa.entity.RegistrationApplication;
 import com.keltron.utility.responses.payload.DropdownPayload;
 
@@ -45,8 +46,9 @@ public class PetShopProposedAnimal extends AbstractEntity {
 	@Column(name = "record_kind", nullable = false, length = 20)
 	private String recordKind = "PROPOSED";
 
-	@Column(name = "species", nullable = false, length = 120)
-	private String species;
+	@ManyToOne
+	@JoinColumn(name = "species_id")
+	private AnimalSpecies species;
 
 	@Column(name = "breed", length = 120)
 	private String breed;
@@ -90,8 +92,13 @@ public class PetShopProposedAnimal extends AbstractEntity {
 			recordKind = animalDto.getRecordKind();
 		}
 
-		if (ValidationUtils.isValid(animalDto.getSpecies())) {
-			species = animalDto.getSpecies();
+		if (animalDto.getSpecies() != null
+		        && animalDto.getSpecies().getId() != null) {
+
+		    AnimalSpecies animalSpecies = new AnimalSpecies();
+		    animalSpecies.setId(animalDto.getSpecies().getId());
+
+		    species = animalSpecies;
 		}
 
 		if (ValidationUtils.isValid(animalDto.getBreed())) {
@@ -138,7 +145,16 @@ public class PetShopProposedAnimal extends AbstractEntity {
 		}
 
 		dto.setRecordKind(recordKind);
-		dto.setSpecies(species);
+		if (species != null) {
+
+		    DropdownPayload<Long> speciesPayload =
+		            new DropdownPayload<>();
+
+		    speciesPayload.setId(species.getId());
+		    speciesPayload.setName(species.getSpeciesName());
+
+		    dto.setSpecies(speciesPayload);
+		}
 		dto.setBreed(breed);
 		dto.setQuantity(quantity);
 		dto.setDescription(description);
@@ -154,7 +170,9 @@ public class PetShopProposedAnimal extends AbstractEntity {
 
 		DropdownPayload<Long> payload = new DropdownPayload<>();
 		payload.setId(id);
-		payload.setName(species);
+		if (species != null) {
+		    payload.setName(species.getSpeciesName());
+		}
 
 		return payload;
 	}
