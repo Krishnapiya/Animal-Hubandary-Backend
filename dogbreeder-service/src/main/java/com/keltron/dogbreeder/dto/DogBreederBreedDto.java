@@ -25,6 +25,8 @@ public class DogBreederBreedDto extends AbstractDto {
 
     private Integer dogCount;
 
+    private String ageDescription;
+
     @SuppressWarnings("unchecked")
     @Override
     public DogBreederBreed toEntity() {
@@ -43,6 +45,7 @@ public class DogBreederBreedDto extends AbstractDto {
         if (dogBreederDetail != null && dogBreederDetail.getId() != null) {
             entity.setDogBreederDetail(new DogBreederDetail(dogBreederDetail.getId()));
         }
+        entity.setAgeDescription(ageDescription);
 
         return entity;
     }

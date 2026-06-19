@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableJpaAuditing
@@ -19,6 +20,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EntityScan(basePackages = {
         "com.keltron.utility.jpa.entity",
         "com.keltron.dogbreeder.entity"
+})
+@EnableJpaRepositories(basePackages = {
+        "com.keltron.dogbreeder.repository",
+        "com.keltron.utility.jpa.repository"
 })
 public class DogbreederServiceApplication {
 
