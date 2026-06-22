@@ -114,4 +114,14 @@ public class PetShopProposedAnimalController extends AbstractController {
 				.contentLength(resource.contentLength())
 				.body(resource);
 	}
+	@GetMapping("/draft/{applicationId}")
+	public ResponseEntity<AbstractResponse> getDraft(
+	        @PathVariable Long applicationId) {
+
+	    return new ResponseBuilder()
+	            .withData(
+	                    serviceImpl.getDraft(
+	                            applicationId))
+	            .build();
+	}
 }

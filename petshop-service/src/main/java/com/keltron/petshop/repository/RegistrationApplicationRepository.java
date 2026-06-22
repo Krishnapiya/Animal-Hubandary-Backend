@@ -3,6 +3,7 @@ package com.keltron.petshop.repository;
 import java.util.List;
 import java.util.Optional;
 
+import com.keltron.petshop.entity.PetShopProposedAnimal;
 import com.keltron.utility.jpa.entity.RegistrationApplication;
 import com.keltron.utility.jpa.repository.AbstractRepository;
 
@@ -18,4 +19,5 @@ public interface RegistrationApplicationRepository
                     Long applicantUserId,
                     String entityType,
                     String statusCode);
+    
 }
