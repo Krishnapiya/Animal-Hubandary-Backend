@@ -44,6 +44,10 @@ public class DogBreederBreed extends AbstractEntity {
 
     @Column(name = "dog_count", nullable = false)
     private Integer dogCount = 0;
+    
+    @Column(name = "age_description", length = 200)
+    private String ageDescription;
+
 
     @Override
     public <K extends AbstractDto> void copyFromDTO(K dto) {
@@ -66,6 +70,8 @@ public class DogBreederBreed extends AbstractEntity {
         if (breedDto.getDogCount() != null) {
             dogCount = breedDto.getDogCount();
         }
+        this.ageDescription = breedDto.getAgeDescription();
+
     }
 
     @SuppressWarnings("unchecked")
@@ -84,6 +90,7 @@ public class DogBreederBreed extends AbstractEntity {
             detailPayload.setName(dogBreederDetail.getBreederName());
             dto.setDogBreederDetail(detailPayload);
         }
+        dto.setAgeDescription(ageDescription);
 
         return dto;
     }
