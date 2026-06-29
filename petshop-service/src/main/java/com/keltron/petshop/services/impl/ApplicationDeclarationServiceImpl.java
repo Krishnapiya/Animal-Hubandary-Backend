@@ -6,7 +6,7 @@ import com.keltron.petshop.dto.ApplicationDeclarationDto;
 import com.keltron.petshop.entity.ApplicationDeclaration;
 import com.keltron.petshop.repository.ApplicationDeclarationRepository;
 import com.keltron.utility.manage.service.abs.AbstractJpaService;
-
+import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ApplicationDeclarationServiceImpl
         extends AbstractJpaService<
@@ -15,4 +15,13 @@ public class ApplicationDeclarationServiceImpl
                 ApplicationDeclarationRepository,
                 ApplicationDeclaration> {
 
+    @Transactional(readOnly = true)
+    public ApplicationDeclarationDto getDraft(
+            Long applicationId) {
+
+        return repository
+                .findByApplicationId(applicationId)
+                .map(ApplicationDeclaration::toDTO)
+                .orElse(null);
+    }
 }

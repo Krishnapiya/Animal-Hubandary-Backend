@@ -1,7 +1,8 @@
 package com.keltron.admin.controller;
 
 import java.io.ByteArrayOutputStream;
-
+import java.io.IOException;
+import org.springframework.core.io.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
@@ -30,8 +31,9 @@ import com.keltron.utility.requests.Request;
 import com.keltron.utility.responses.AbstractResponse;
 import com.keltron.utility.web.controller.abs.AbstractController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-
+import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping(value = "admin/auth/awb/application-document")
 public class ApplicationDocumentController extends AbstractController {
@@ -40,7 +42,7 @@ public class ApplicationDocumentController extends AbstractController {
     private ApplicationDocumentServiceImpl serviceImpl;
 
     @PostMapping("/save")
-    @RequirePermission(menu = "application-document", action = "save")
+//    @RequirePermission(menu = "application-document", action = "save")
     public ResponseEntity<AbstractResponse> save(
             @Valid @RequestBody Request<ApplicationDocumentDto> request) {
 
@@ -60,7 +62,7 @@ public class ApplicationDocumentController extends AbstractController {
     }
 
     @PatchMapping("/save")
-    @RequirePermission(menu = "application-document", action = "edit")
+    //@RequirePermission(menu = "application-document", action = "edit")
     public ResponseEntity<AbstractResponse> update(
             @Valid @RequestBody Request<ApplicationDocumentDto> request) {
 
@@ -82,7 +84,7 @@ public class ApplicationDocumentController extends AbstractController {
     }
 
     @GetMapping("/list/all")
-    @RequirePermission(menu = "application-document", action = "list")
+    //@RequirePermission(menu = "application-document", action = "list")
     public ResponseEntity<AbstractResponse> findByCriteria(
         @RequestParam(name = "dropDown", required = false, defaultValue = "false") boolean asDropdown,
         @Valid ApplicationDocumentSearchBean searchBean) {
@@ -116,5 +118,46 @@ public class ApplicationDocumentController extends AbstractController {
                 "application/vnd.openxmlformats-application-documentdocument.spreadsheetml.sheet"))
             .contentLength(resource.contentLength())
             .body(resource);
+    }
+    
+    @GetMapping("/draft/{applicationId}")
+    public ResponseEntity<AbstractResponse> getDraft(
+            @PathVariable Long applicationId) {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.getDraft(applicationId))
+                .build();
+    }
+    @PostMapping(
+            value = "/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<AbstractResponse> uploadDocument(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam Long applicationId,
+            @RequestParam Long documentTypeId,
+            @RequestParam Long uploadedBy)
+            throws IOException {
+
+        return new ResponseBuilder()
+                .withData(
+                        serviceImpl.uploadDocument(
+                                file,
+                                applicationId,
+                                documentTypeId,
+                                uploadedBy))
+                .build();
+    }
+    @GetMapping("/view/**")
+    public ResponseEntity<Resource> viewDocument(
+            HttpServletRequest request) throws IOException {
+
+        String path = request.getRequestURI();
+
+        String filePath =
+                path.substring(
+                        path.indexOf("/view/") + 6);
+
+        return serviceImpl.viewDocument(filePath);
     }
 }
