@@ -84,6 +84,7 @@ public class PetShopOwnerApplicationService {
 
         PetShopRegistrationDraftDto draft = new PetShopRegistrationDraftDto();
         draft.setApplicationId(application.getId());
+        draft.setDetailId(detail.getId());
         draft.setStatusCode(DRAFT_STATUS);
         if (application.getDistrict() != null) {
             draft.setDistrictId(application.getDistrict().getId());

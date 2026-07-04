@@ -32,10 +32,11 @@ public class PetShopProposedAnimalPredicates {
 			}
 
 			if (ValidationUtils.isValid(searchBean.getSpecies())) {
-				predicates.add(criteriaBuilder.like(
-						criteriaBuilder.lower(root.get("species")),
-						"%" + searchBean.getSpecies().toLowerCase() + "%"
-				));
+			    predicates.add(criteriaBuilder.like(
+			            criteriaBuilder.lower(
+			                    root.get("species").get("speciesName")),
+			            "%" + searchBean.getSpecies().toLowerCase() + "%"
+			    ));
 			}
 
 			if (ValidationUtils.isValid(searchBean.getBreed())) {
@@ -58,8 +59,9 @@ public class PetShopProposedAnimalPredicates {
 				String keyword = "%" + searchBean.getSearch().toLowerCase() + "%";
 
 				Predicate bySpecies = criteriaBuilder.like(
-						criteriaBuilder.lower(root.get("species")),
-						keyword
+				        criteriaBuilder.lower(
+				                root.get("species").get("speciesName")),
+				        keyword
 				);
 
 				Predicate byBreed = criteriaBuilder.like(

@@ -30,4 +30,5 @@ public class PetShopRegistrationDraftDto {
     private String contactEmail;
     private BigDecimal latitude;
     private BigDecimal longitude;
+    private Long detailId;
 }
