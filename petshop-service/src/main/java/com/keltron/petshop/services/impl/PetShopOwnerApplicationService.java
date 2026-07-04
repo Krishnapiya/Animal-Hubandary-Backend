@@ -131,6 +131,13 @@ public class PetShopOwnerApplicationService {
         application.setStatus(draftStatus);
         application.setDistrict(new District(dto.getDistrictId()));
         application = applicationRepository.save(application);
+        if (application.getApplicationNumber() == null) {
+
+            application.setApplicationNumber(
+                    "PS-" + String.format("%06d", application.getId()));
+
+            application = applicationRepository.save(application);
+        }
 
         PetShopDetail detail = detailRepository
                 .findByApplicationId(application.getId())
