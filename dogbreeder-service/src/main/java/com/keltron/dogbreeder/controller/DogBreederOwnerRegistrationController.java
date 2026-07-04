@@ -26,7 +26,7 @@ public class DogBreederOwnerRegistrationController {
     @GetMapping("/draft")
     public ResponseEntity<?> getDraft() {
         return new ResponseBuilder()
-                .withData(registrationService.getDraftStep1())
+                .withData(registrationService.getDraft())
                 .build();
     }
 
@@ -46,4 +46,6 @@ public class DogBreederOwnerRegistrationController {
                 .withData(registrationService.saveStep1(dto))
                 .build();
     }
+
+   
 }

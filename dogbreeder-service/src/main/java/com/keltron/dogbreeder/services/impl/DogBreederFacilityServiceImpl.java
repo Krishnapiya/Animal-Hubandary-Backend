@@ -44,12 +44,56 @@ public class DogBreederFacilityServiceImpl extends AbstractJpaService<
     @Override
     @WriteTransactional
     public DogBreederFacility save(DogBreederFacilityDto dto) {
+
+        if (dto.getDogBreederDetailId() != null) {
+
+            DogBreederFacility existingFacility =
+                    dogBreederFacilityRepository
+                            .findByDogBreederDetail_Id(dto.getDogBreederDetailId())
+                            .orElse(null);
+
+            if (existingFacility != null) {
+
+                updateEditableFields(existingFacility, dto);
+
+                return dogBreederFacilityRepository.save(existingFacility);
+            }
+        }
+
         return super.save(dto);
     }
 
     @Override
     @WriteTransactional
     public DogBreederFacility update(Long id, DogBreederFacilityDto dto) {
+
+        DogBreederFacility existingFacility =
+                dogBreederFacilityRepository.findById(id).orElse(null);
+
+        if (existingFacility != null) {
+
+            updateEditableFields(existingFacility, dto);
+
+            return dogBreederFacilityRepository.save(existingFacility);
+        }
+
         return super.update(id, dto);
+    }
+
+    private void updateEditableFields(
+            DogBreederFacility facility,
+            DogBreederFacilityDto dto) {
+
+        facility.setAccommodationInfrastructure(dto.getAccommodationInfrastructure());
+        facility.setWorkingHours(dto.getWorkingHours());
+        facility.setRestDay(dto.getRestDay());
+        facility.setVentilationArrangement(dto.getVentilationArrangement());
+        facility.setLightingArrangement(dto.getLightingArrangement());
+        facility.setHeatingCoolingArrangement(dto.getHeatingCoolingArrangement());
+        facility.setFoodStorageArrangement(dto.getFoodStorageArrangement());
+        facility.setCleanlinessWasteArrangement(dto.getCleanlinessWasteArrangement());
+        facility.setDeadAnimalDisposalArrangement(dto.getDeadAnimalDisposalArrangement());
+        facility.setVeterinarySupportArrangement(dto.getVeterinarySupportArrangement());
+        facility.setCageEnclosureDetails(dto.getCageEnclosureDetails());
     }
 }

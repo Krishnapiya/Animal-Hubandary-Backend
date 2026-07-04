@@ -44,18 +44,59 @@ public class DogBreederDeclarationServiceImpl extends AbstractJpaService<
 
     @Override
     @WriteTransactional
-    public DogBreederDeclaration save(
-            DogBreederDeclarationDto dto) {
+    public DogBreederDeclaration save(DogBreederDeclarationDto dto) {
+
+        Long dogBreederDetailId = null;
+
+        if (dto.getDogBreederDetail() != null
+                && dto.getDogBreederDetail().getId() != null) {
+            dogBreederDetailId = dto.getDogBreederDetail().getId();
+        }
+
+        if (dogBreederDetailId != null) {
+
+            DogBreederDeclaration existingDeclaration =
+                    dogBreederDeclarationRepository
+                            .findByDogBreederDetail_Id(dogBreederDetailId)
+                            .orElse(null);
+
+            if (existingDeclaration != null) {
+
+                updateEditableFields(existingDeclaration, dto);
+
+                return dogBreederDeclarationRepository.save(existingDeclaration);
+            }
+        }
 
         return super.save(dto);
     }
 
     @Override
     @WriteTransactional
-    public DogBreederDeclaration update(
-            Long id,
-            DogBreederDeclarationDto dto) {
+    public DogBreederDeclaration update(Long id, DogBreederDeclarationDto dto) {
+
+        DogBreederDeclaration existingDeclaration =
+                dogBreederDeclarationRepository.findById(id).orElse(null);
+
+        if (existingDeclaration != null) {
+
+            updateEditableFields(existingDeclaration, dto);
+
+            return dogBreederDeclarationRepository.save(existingDeclaration);
+        }
 
         return super.update(id, dto);
+    }
+
+    private void updateEditableFields(
+            DogBreederDeclaration declaration,
+            DogBreederDeclarationDto dto) {
+
+        declaration.setQualificationExperience(dto.getQualificationExperience());
+        declaration.setDeclarationAccepted(dto.getDeclarationAccepted());
+        declaration.setDeclarationPlace(dto.getDeclarationPlace());
+        declaration.setDeclarationDate(dto.getDeclarationDate());
+        declaration.setApplicantName(dto.getApplicantName());
+        declaration.setSignatureName(dto.getSignatureName());
     }
 }
