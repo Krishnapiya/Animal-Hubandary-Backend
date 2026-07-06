@@ -1,0 +1,32 @@
+package com.keltron.petshop.repository;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.keltron.petshop.entity.PetShopRegistrationApplication;
+import com.keltron.utility.jpa.repository.AbstractRepository;
+
+public interface PetShopRegistrationApplicationRepository
+        extends AbstractRepository<
+                PetShopRegistrationApplication,
+                Long> {
+
+    Optional<PetShopRegistrationApplication>
+            findByApplicationNumber(
+                    String applicationNumber);
+
+    List<PetShopRegistrationApplication>
+            findByApplicantUserIdOrderByIdDesc(
+                    Long applicantUserId);
+
+    Optional<PetShopRegistrationApplication>
+            findByIdAndApplicantUserId(
+                    Long id,
+                    Long applicantUserId);
+
+    Optional<PetShopRegistrationApplication>
+            findFirstByApplicantUserIdAndEntityTypeAndStatus_StatusCodeOrderByIdDesc(
+                    Long applicantUserId,
+                    String entityType,
+                    String statusCode);
+}

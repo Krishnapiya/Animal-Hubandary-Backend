@@ -33,17 +33,18 @@ public class SecurityConfig {
 	@Value("${security.jwt.secret-key}")
     private String jwtSecretKey;
 	@Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        return http.csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .build();
-    }
+	    return http.csrf(csrf -> csrf.disable())
+	            .authorizeHttpRequests(auth -> auth
+	                    .requestMatchers("/").permitAll()
+	                    .requestMatchers("/petshop/auth/application-document/view/**").permitAll()
+	                    .anyRequest().authenticated()
+	            )
+	            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+	            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+	            .build();
+	}
 	
 	@Bean
     public JwtDecoder jwtDecoder() {

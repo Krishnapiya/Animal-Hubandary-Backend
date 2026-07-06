@@ -36,10 +36,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         return http.csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/").permitAll()
-                        .anyRequest().authenticated()
-                )
+        		.authorizeHttpRequests(auth -> auth
+        		        .requestMatchers("/").permitAll()
+        		        .requestMatchers("/admin/auth/awb/application-document/view/**").permitAll()
+        		        .anyRequest().authenticated()
+        		)
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();

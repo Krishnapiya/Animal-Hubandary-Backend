@@ -145,6 +145,18 @@ public class ApplicationDeclarationController
                 .withData(serviceImpl.delete(id))
                 .build();
     }
+    
+    @GetMapping(
+    	    "petshop/auth/master/application-declaration/draft/{applicationId}")
+    	public ResponseEntity<AbstractResponse> getDraft(
+    	        @PathVariable Long applicationId) {
+
+    	    return new ResponseBuilder()
+    	            .withData(
+    	                    serviceImpl.getDraft(
+    	                            applicationId))
+    	            .build();
+    	}
 
 //    @PostMapping(
 //            "petshop/auth/master/application-declaration/download-excel")
