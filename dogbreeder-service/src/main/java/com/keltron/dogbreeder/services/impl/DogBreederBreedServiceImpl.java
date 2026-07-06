@@ -37,12 +37,54 @@ public class DogBreederBreedServiceImpl
     @Override
     @WriteTransactional
     public DogBreederBreed save(DogBreederBreedDto dto) {
+
+        Long dogBreederDetailId = null;
+
+        if (dto.getDogBreederDetail() != null
+                && dto.getDogBreederDetail().getId() != null) {
+            dogBreederDetailId = dto.getDogBreederDetail().getId();
+        }
+
+        if (dogBreederDetailId != null
+                && dto.getBreedName() != null
+                && !dto.getBreedName().isBlank()) {
+
+            DogBreederBreed existingBreed =
+                    dogBreederBreedRepository
+                            .findByDogBreederDetail_IdAndBreedNameIgnoreCase(
+                                    dogBreederDetailId,
+                                    dto.getBreedName().trim()
+                            )
+                            .orElse(null);
+
+            if (existingBreed != null) {
+                updateEditableFields(existingBreed, dto);
+                return dogBreederBreedRepository.save(existingBreed);
+            }
+        }
+
         return super.save(dto);
     }
 
     @Override
     @WriteTransactional
     public DogBreederBreed update(Long id, DogBreederBreedDto dto) {
+
+        DogBreederBreed existingBreed =
+                dogBreederBreedRepository.findById(id).orElse(null);
+
+        if (existingBreed != null) {
+            updateEditableFields(existingBreed, dto);
+            return dogBreederBreedRepository.save(existingBreed);
+        }
+
         return super.update(id, dto);
+    }
+
+    private void updateEditableFields(DogBreederBreed breed, DogBreederBreedDto dto) {
+
+        breed.setBreedName(dto.getBreedName());
+        breed.setDogCount(dto.getDogCount());
+        breed.setAgeDescription(dto.getAgeDescription());
     }
 }

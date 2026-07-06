@@ -9,4 +9,7 @@ public interface DogBreederDetailRepository
         extends AbstractRepository<DogBreederDetail, Long> {
 
     Optional<DogBreederDetail> findByApplicationId(Long applicationId);
+    
+    Optional<DogBreederDetail>
+    findTopByApplicationIdIsNotNullOrderByApplicationIdDesc();
 }

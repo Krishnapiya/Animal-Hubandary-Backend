@@ -1,5 +1,7 @@
 package com.keltron.dogbreeder.entity;
 
+import java.sql.Timestamp;
+
 import com.keltron.dogbreeder.dto.DogBreederBreedDto;
 import com.keltron.utility.ValidationUtils;
 import com.keltron.utility.beans.abs.AbstractDto;
@@ -14,6 +16,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -44,10 +48,47 @@ public class DogBreederBreed extends AbstractEntity {
 
     @Column(name = "dog_count", nullable = false)
     private Integer dogCount = 0;
-    
+
     @Column(name = "age_description", length = 200)
     private String ageDescription;
 
+    @PrePersist
+    public void prePersist() {
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+
+        if (getCreatedAt() == null) {
+            setCreatedAt(now);
+        }
+
+        if (getLastModifiedAt() == null) {
+            setLastModifiedAt(now);
+        }
+
+        if (getCreatedBy() == null || getCreatedBy().isBlank()) {
+            setCreatedBy("SYSTEM");
+        }
+
+        if (getLastModifiedBy() == null || getLastModifiedBy().isBlank()) {
+            setLastModifiedBy(getCreatedBy());
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        setLastModifiedAt(new Timestamp(System.currentTimeMillis()));
+
+        if (getLastModifiedBy() == null || getLastModifiedBy().isBlank()) {
+            setLastModifiedBy("SYSTEM");
+        }
+
+        if (getCreatedAt() == null) {
+            setCreatedAt(new Timestamp(System.currentTimeMillis()));
+        }
+
+        if (getCreatedBy() == null || getCreatedBy().isBlank()) {
+            setCreatedBy("SYSTEM");
+        }
+    }
 
     @Override
     public <K extends AbstractDto> void copyFromDTO(K dto) {
@@ -70,8 +111,8 @@ public class DogBreederBreed extends AbstractEntity {
         if (breedDto.getDogCount() != null) {
             dogCount = breedDto.getDogCount();
         }
-        this.ageDescription = breedDto.getAgeDescription();
 
+        ageDescription = breedDto.getAgeDescription();
     }
 
     @SuppressWarnings("unchecked")
@@ -83,6 +124,7 @@ public class DogBreederBreed extends AbstractEntity {
         dto.setId(id);
         dto.setBreedName(breedName);
         dto.setDogCount(dogCount);
+        dto.setAgeDescription(ageDescription);
 
         if (dogBreederDetail != null) {
             DropdownPayload<Long> detailPayload = new DropdownPayload<>();
@@ -90,7 +132,6 @@ public class DogBreederBreed extends AbstractEntity {
             detailPayload.setName(dogBreederDetail.getBreederName());
             dto.setDogBreederDetail(detailPayload);
         }
-        dto.setAgeDescription(ageDescription);
 
         return dto;
     }
