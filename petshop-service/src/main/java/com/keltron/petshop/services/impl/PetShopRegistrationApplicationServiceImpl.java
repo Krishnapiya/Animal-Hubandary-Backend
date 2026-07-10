@@ -1,16 +1,24 @@
 package com.keltron.petshop.services.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import com.keltron.petshop.repository.PetShopOfficeRepository;
+import com.keltron.utility.jpa.entity.Office;
 import com.keltron.petshop.repository.PetShopApplicationDocumentRepository;
 import com.keltron.petshop.dto.PetShopApplicationDocumentDto;
 import com.keltron.petshop.entity.PetShopApplicationDocument;
 import java.util.List;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 
+import com.keltron.utility.jpa.entity.Users;
+import com.keltron.utility.jpa.repository.UsersRepository;
 import com.keltron.petshop.entity.ApplicationDeclaration;
 import com.keltron.petshop.entity.PetShopFacility;
 import com.keltron.petshop.entity.PetShopProposedAnimal;
 
 import com.keltron.petshop.repository.ApplicationDeclarationRepository;
+import com.keltron.petshop.repository.ApplicationStatusMasterRepository;
 import com.keltron.petshop.repository.PetShopFacilityRepository;
 import com.keltron.petshop.repository.PetShopProposedAnimalRepository;
 import org.springframework.http.HttpStatus;
@@ -47,6 +55,13 @@ public class PetShopRegistrationApplicationServiceImpl
 
     @Autowired
     private ApplicationDeclarationRepository declarationRepository;
+    @Autowired
+    private ApplicationStatusMasterRepository statusRepository;
+    @Autowired
+    private PetShopOfficeRepository officeRepository;
+    @Autowired
+    private UsersRepository usersRepository;
+    
     @Transactional(readOnly = true)
     public PetShopRegistrationViewDto getApplication(Long id) {
 
@@ -103,6 +118,9 @@ public class PetShopRegistrationApplicationServiceImpl
 
         dto.setShopName(detail.getShopName());
         dto.setOwnerName(detail.getOwnerName());
+        
+        dto.setFatherOrHusbandName(detail.getFatherOrHusbandName());
+        dto.setAge(detail.getAge());
 
         dto.setAddressLine1(detail.getAddressLine1());
         dto.setAddressLine2(detail.getAddressLine2());
@@ -179,6 +197,136 @@ public class PetShopRegistrationApplicationServiceImpl
 
         return dto;
     }
+    @Transactional
+    public PetShopRegistrationApplicationDto forwardApplication(Long id) {
+
+        PetShopRegistrationApplication application =
+                repository.findById(id)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Application not found"));
+
+        application.setStatus(
+                statusRepository.findByStatusCode("FORWARDED_TO_CVO")
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Status FORWARDED_TO_CVO not found")));
+        Office office = officeRepository
+                .findByDistrictId(application.getDistrict().getId())
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "District office not found"));
+        System.out.println("Application District = " + application.getDistrict().getId());
+        System.out.println("Office ID = " + office.getId());
+
+        application.setCvOfficeId(Long.valueOf(office.getId()));
+
+        System.out.println("cvOfficeId after set = " + application.getCvOfficeId());
+
+        repository.save(application);
+
+        System.out.println("Saved successfully");
+
+        application.setCvOfficeId(Long.valueOf(office.getId()));
+
+        repository.save(application);
+
+        return application.toDTO();
+    }
+    
+    @Transactional(readOnly = true)
+    public List<PetShopRegistrationApplicationDto> getMyApplications() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+
+        String username = jwt.getSubject();
+
+        Users user = usersRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "User not found"));
+
+        return repository
+                .findByApplicantUserIdOrderByIdDesc(user.getId())
+                .stream()
+                .map(application -> {
+
+                    PetShopRegistrationApplicationDto dto = application.toDTO();
+
+                    detailRepository.findByApplicationId(application.getId())
+                            .ifPresent(detail -> {
+                                dto.setShopName(detail.getShopName());
+                            });
+
+                    return dto;
+                })
+                .toList();
+    }
+    @Transactional
+    public PetShopRegistrationApplicationDto submitApplication(Long id) {
+
+        PetShopRegistrationApplication application =
+                repository.findById(id)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Application not found"));
+
+        application.setStatus(
+                statusRepository.findByStatusCode("SUBMITTED")
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Status SUBMITTED not found")));
+
+        repository.save(application);
+
+        return application.toDTO();
+    }
+    
+    
+    @Transactional(readOnly = true)
+    public List<PetShopRegistrationApplicationDto> getMyForwardedApplications() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+
+        String username = jwt.getSubject();
+
+        System.out.println("Logged in username = " + username);
+
+        Users user = usersRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "User not found"));
+
+        System.out.println("Office = " + user.getOffice().getName());
+
+        Long officeId = Long.valueOf(user.getOffice().getId());
+
+        System.out.println("Office ID = " + officeId);
+
+        List<PetShopRegistrationApplicationDto> applications =
+                repository.findByCvOfficeIdOrderByIdDesc(officeId)
+                        .stream()
+                        .map(PetShopRegistrationApplication::toDTO)
+                        .toList();
+
+        System.out.println("Applications Found = " + applications.size());
+
+        return applications;
+    }
+    
     
 
 }

@@ -25,7 +25,10 @@ public class PetShopRegistrationViewDto {
     // Pet Shop Details
     private String shopName;
     private String ownerName;
-
+    
+    private String fatherOrHusbandName;
+    private Integer age;
+    
     private String addressLine1;
     private String addressLine2;
 

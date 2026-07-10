@@ -28,4 +28,6 @@ public class PetShopRegistrationStep1Dto {
     private String contactEmail;
     private BigDecimal latitude;
     private BigDecimal longitude;
+    private String fatherOrHusbandName;
+    private Integer age;
 }

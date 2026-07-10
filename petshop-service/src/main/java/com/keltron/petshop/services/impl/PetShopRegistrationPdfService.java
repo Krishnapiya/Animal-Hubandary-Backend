@@ -1,6 +1,10 @@
 package com.keltron.petshop.services.impl;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import org.springframework.beans.factory.annotation.Value;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
@@ -50,13 +54,19 @@ public class PetShopRegistrationPdfService {
     private PetShopRegistrationApplicationServiceImpl applicationService;
     @Autowired
     private PetShopApplicationDocumentRepository documentRepository;
+    @Value("${application.document.upload-dir:/home/keltron/Documents/uploads/documents}")
+    private String uploadDir;
 
     @Transactional(readOnly = true)
-    public ResponseEntity<byte[]> downloadApplication(Long id)
+    public byte[] generateApplicationPdf(Long id)
             throws Exception {
 
         PetShopRegistrationViewDto dto =
                 applicationService.getApplication(id);
+        System.out.println("=================================");
+        System.out.println("Father/Husband : " + dto.getFatherOrHusbandName());
+        System.out.println("Age            : " + dto.getAge());
+        System.out.println("=================================");
 
         ByteArrayOutputStream out =
                 new ByteArrayOutputStream();
@@ -483,37 +493,36 @@ public class PetShopRegistrationPdfService {
         rightCell.setBorder(PdfPCell.NO_BORDER);
         rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
+        System.out.println("Application Id = " + id);
+
         Optional<PetShopApplicationDocument> signatureDoc =
                 documentRepository.findFirstByApplication_IdAndDocumentType_Code(
                         id,
                         "APPLICANT_SIGNATURE");
 
+        System.out.println("Signature Found = " + signatureDoc.isPresent());
+
+        if (signatureDoc.isPresent()) {
+            System.out.println("File Path = " + signatureDoc.get().getFilePath());
+        }
+
         if (signatureDoc.isPresent()) {
 
-            String uploadRoot =
-                    System.getProperty("user.home")
-                    + File.separator
-                    + "Documents"
-                    + File.separator
-                    + "uploads"
-                    + File.separator
-                    + "documents";
+        	String filePath = signatureDoc.get().getFilePath();
 
-            String fullPath =
-                    uploadRoot
-                    + File.separator
-                    + signatureDoc.get().getFilePath();
+        	Path path = resolveFilePath(filePath);
+        	System.out.println("Resolved Path = " + path);
+        	System.out.println("File Exists = " + Files.exists(path));
 
-            File imageFile = new File(fullPath);
+        	if (path != null && Files.exists(path)) {
 
-            if (imageFile.exists()) {
+        	    Image image =
+        	            Image.getInstance(path.toAbsolutePath().toString());
 
-                Image image = Image.getInstance(fullPath);
+        	    image.scaleToFit(140, 60);
 
-                image.scaleToFit(140, 60);
-
-                rightCell.addElement(image);
-            }
+        	    rightCell.addElement(image);
+        	}
         }
 
         signTable.addCell(rightCell);
@@ -614,14 +623,25 @@ public class PetShopRegistrationPdfService {
                         + " - "
                         + value(dto.getPincode());
 
-        Paragraph affidavit =
-                new Paragraph(
-                        "I "
-                                + value(dto.getAffidavitDeponentName())
-                                + " residing at "
-                                + ownerAddress1
-                                + " do hereby solemnly affirm and state as follows :-",
-                        NORMAL_FONT);
+        Paragraph affidavit = new Paragraph();
+        affidavit.setFont(NORMAL_FONT);
+
+        affidavit.add(
+                "I "
+                + value(dto.getAffidavitDeponentName())
+                + ", S/o/D/o "
+                + value(dto.getFatherOrHusbandName())
+                + ", aged "
+                + (dto.getAge() != null ? dto.getAge() : "__________")
+                + " years,\n");
+
+        affidavit.add(
+                "residing at "
+                + ownerAddress1
+                + "\n");
+
+        affidavit.add(
+                "do hereby solemnly affirm and state as follows :-");
 
         affidavit.setSpacingAfter(15);
 
@@ -691,20 +711,8 @@ public class PetShopRegistrationPdfService {
 
         document.close();
 
-        HttpHeaders headers = new HttpHeaders();
 
-        headers.setContentType(MediaType.APPLICATION_PDF);
-
-        headers.setContentDisposition(
-                ContentDisposition
-                        .attachment()
-                        .filename("PetShopApplication.pdf")
-                        .build());
-
-        return ResponseEntity
-                .ok()
-                .headers(headers)
-                .body(out.toByteArray());
+        return out.toByteArray();
     }
 
     /* ==========================================================
@@ -804,6 +812,41 @@ public class PetShopRegistrationPdfService {
         cell.setPadding(5);
 
         return cell;
+    }
+    private Path resolveFilePath(String filePath) {
+
+        if (filePath == null || filePath.trim().isEmpty() || "-".equals(filePath)) {
+            return null;
+        }
+
+        String normalizedPath = filePath.replace("\\", "/");
+
+        if (normalizedPath.startsWith("/")) {
+            normalizedPath = normalizedPath.substring(1);
+        }
+
+        Path directPath = Paths.get(normalizedPath);
+
+        if (Files.exists(directPath)) {
+            return directPath;
+        }
+
+        Path uploadPath = Paths.get(uploadDir);
+
+        String uploadFolderName = uploadPath.getFileName() != null
+                ? uploadPath.getFileName().toString()
+                : "";
+
+        if (!uploadFolderName.isEmpty()
+                && normalizedPath.startsWith(uploadFolderName + "/")) {
+
+            String strippedPath =
+                    normalizedPath.substring(uploadFolderName.length() + 1);
+
+            return uploadPath.resolve(strippedPath).normalize();
+        }
+
+        return uploadPath.resolve(normalizedPath).normalize();
     }
 
 }

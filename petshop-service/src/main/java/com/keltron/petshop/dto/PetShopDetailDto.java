@@ -15,7 +15,8 @@ import lombok.Setter;
 public class PetShopDetailDto extends AbstractDto {
 
     private static final long serialVersionUID = 1L;
-
+    private String fatherOrHusbandName;
+    private Integer age;
     private Long id;
     private Long applicationId;
     private String shopName;
@@ -48,6 +49,8 @@ public class PetShopDetailDto extends AbstractDto {
         entity.setLatitude(latitude);
         entity.setLongitude(longitude);
         entity.setRegistrationDetails(registrationDetails);
+        entity.setFatherOrHusbandName(fatherOrHusbandName);
+        entity.setAge(age);
 
         return entity;
     }

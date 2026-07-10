@@ -22,7 +22,7 @@ public class PetShopRegistrationApplicationDto extends AbstractDto {
     private String applicationNumber;
     private String entityType;
     private String applicationKind;
-
+    private String shopName;
     private Long statusId;
     private Long applicantUserId;
     private Integer districtId;

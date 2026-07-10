@@ -1,6 +1,8 @@
 package com.keltron.petshop.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -113,7 +115,20 @@ public class PetShopRegistrationApplicationController
                     defaultValue = "false")
             boolean asDropdown,
 
+            @RequestParam(
+                    name = "forwardedOnly",
+                    required = false,
+                    defaultValue = "false")
+            boolean forwardedOnly,
+
             @Valid PetShopRegistrationApplicationSearchBean searchBean) {
+    	System.out.println("forwardedOnly = " + forwardedOnly);
+
+        if (forwardedOnly) {
+            return new ResponseBuilder()
+                    .withData(serviceImpl.getMyForwardedApplications())
+                    .build();
+        }
 
         return asDropdown
                 ? new ResponseBuilder()
@@ -158,9 +173,48 @@ public class PetShopRegistrationApplicationController
             @PathVariable Long id)
             throws Exception {
 
-        System.out.println("===== DOWNLOAD CONTROLLER HIT =====");
+        byte[] pdf = pdfService.generateApplicationPdf(id);
 
-        return pdfService.downloadApplication(id);
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=PetShopApplication.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
+    @PatchMapping("/forward/{id}")
+    public ResponseEntity<AbstractResponse> forwardApplication(
+            @PathVariable Long id) {
+
+        System.out.println("===== FORWARD CONTROLLER HIT =====");
+        System.out.println("Application ID = " + id);
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.forwardApplication(id))
+                .build();
+    }
+    @GetMapping("/my-forwarded")
+    public ResponseEntity<AbstractResponse> getMyForwardedApplications() {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.getMyForwardedApplications())
+                .build();
+    }
+    @PatchMapping("/submit/{id}")
+    public ResponseEntity<AbstractResponse> submitApplication(
+            @PathVariable Long id) {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.submitApplication(id))
+                .build();
+    }
+    @GetMapping("/my-applications")
+    public ResponseEntity<AbstractResponse> myApplications() {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.getMyApplications())
+                .build();
+    }
+    
     
 }

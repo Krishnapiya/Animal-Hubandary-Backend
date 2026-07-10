@@ -31,4 +31,6 @@ public class PetShopRegistrationDraftDto {
     private BigDecimal latitude;
     private BigDecimal longitude;
     private Long detailId;
+    private String fatherOrHusbandName;
+    private Integer age;
 }
