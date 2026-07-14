@@ -5,15 +5,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.keltron.dogbreeder.entity.DogBreederApplicationDocument;
+import com.keltron.dogbreeder.repository.DogBreederApplicationDocumentRepository;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -39,11 +47,20 @@ public class DogBreederRegistrationApplicationPdfService {
     private DogBreederRegistrationApplicationServiceImpl applicationService;
 
     @Autowired
+    private DogBreederApplicationDocumentRepository documentRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @Value("${application.document.upload-dir:uploads}")
     private String uploadDir;
 
+    /**
+     * Generates the dog breeder registration PDF as raw bytes.
+     *
+     * @param applicationId registration application id
+     * @return PDF content
+     */
     public byte[] generateApplicationPdf(Long applicationId) {
 
         try {
@@ -186,6 +203,134 @@ public class DogBreederRegistrationApplicationPdfService {
             e.printStackTrace();
             throw new RuntimeException("Failed to generate dog breeder PDF", e);
         }
+    }
+
+    /**
+     * Builds a ZIP containing the application PDF and all uploaded attachments.
+     *
+     * @param applicationId registration application id
+     * @return ZIP content
+     */
+    @Transactional(readOnly = true)
+    public byte[] generateApplicationZip(Long applicationId) {
+        try {
+            byte[] pdfBytes = generateApplicationPdf(applicationId);
+
+            String pdfFileName =
+                    "dog-breeder-application-" + applicationId + ".pdf";
+
+            ByteArrayOutputStream zipOut = new ByteArrayOutputStream();
+            try (ZipOutputStream zip = new ZipOutputStream(zipOut)) {
+                ZipEntry pdfEntry = new ZipEntry(pdfFileName);
+                zip.putNextEntry(pdfEntry);
+                zip.write(pdfBytes);
+                zip.closeEntry();
+
+                List<DogBreederApplicationDocument> documents =
+                        documentRepository.findByApplication_IdOrderByIdAsc(
+                                applicationId);
+
+                Set<String> usedNames = new HashSet<>();
+                usedNames.add(pdfFileName.toLowerCase(Locale.ROOT));
+
+                int index = 1;
+                for (DogBreederApplicationDocument document : documents) {
+                    if (document.getFilePath() == null
+                            || document.getFilePath().isBlank()) {
+                        continue;
+                    }
+
+                    Path filePath = resolveStoredFilePath(document.getFilePath());
+                    if (filePath == null
+                            || !Files.exists(filePath)
+                            || !Files.isReadable(filePath)) {
+                        continue;
+                    }
+
+                    String entryName = buildAttachmentEntryName(
+                            document,
+                            index++,
+                            usedNames);
+
+                    ZipEntry attachmentEntry =
+                            new ZipEntry("attachments/" + entryName);
+                    zip.putNextEntry(attachmentEntry);
+                    zip.write(Files.readAllBytes(filePath));
+                    zip.closeEntry();
+                }
+            }
+
+            return zipOut.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to generate dog breeder application ZIP",
+                    e);
+        }
+    }
+
+    private Path resolveStoredFilePath(String filePath) {
+        if (filePath == null || filePath.trim().isEmpty() || "-".equals(filePath)) {
+            return null;
+        }
+
+        String normalizedPath = filePath.replace("\\", "/");
+        Path savedPath = Paths.get(normalizedPath).normalize();
+
+        if (savedPath.isAbsolute()) {
+            return savedPath;
+        }
+
+        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+        String uploadFolderName = uploadPath.getFileName() != null
+                ? uploadPath.getFileName().toString()
+                : "";
+
+        if (!uploadFolderName.isEmpty()
+                && normalizedPath.startsWith(uploadFolderName + "/")) {
+            String strippedPath =
+                    normalizedPath.substring(uploadFolderName.length() + 1);
+            return uploadPath.resolve(strippedPath).normalize();
+        }
+
+        return uploadPath.resolve(normalizedPath).normalize();
+    }
+
+    private String buildAttachmentEntryName(
+            DogBreederApplicationDocument document,
+            int index,
+            Set<String> usedNames) {
+
+        String typePrefix = document.getDocumentType() != null
+                && document.getDocumentType().getName() != null
+                ? sanitizeFileName(document.getDocumentType().getName())
+                : "document";
+
+        String originalName = document.getFileName() != null
+                && !document.getFileName().isBlank()
+                ? document.getFileName()
+                : Paths.get(document.getFilePath()).getFileName().toString();
+
+        String entryName = typePrefix + "_" + index + "_"
+                + sanitizeFileName(originalName);
+        String key = entryName.toLowerCase(Locale.ROOT);
+        int duplicate = 1;
+
+        while (usedNames.contains(key)) {
+            entryName = typePrefix + "_" + index + "_" + duplicate + "_"
+                    + sanitizeFileName(originalName);
+            key = entryName.toLowerCase(Locale.ROOT);
+            duplicate++;
+        }
+
+        usedNames.add(key);
+        return entryName;
+    }
+
+    private String sanitizeFileName(String name) {
+        if (name == null || name.isBlank()) {
+            return "file";
+        }
+        return name.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
     }
 
     private void addSignature(

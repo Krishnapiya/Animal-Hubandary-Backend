@@ -121,14 +121,16 @@ public class DogBreederRegistrationApplicationController extends AbstractControl
 	    @GetMapping("/download/{applicationId}")
 	    public ResponseEntity<byte[]> download(@PathVariable Long applicationId) {
 
-	        byte[] pdfBytes = pdfService.generateApplicationPdf(applicationId);
+	        byte[] zipBytes = pdfService.generateApplicationZip(applicationId);
 
 	        return ResponseEntity.ok()
-	                .contentType(MediaType.APPLICATION_PDF)
+	                .contentType(MediaType.parseMediaType("application/zip"))
 	                .header(
 	                        HttpHeaders.CONTENT_DISPOSITION,
-	                        "attachment; filename=dog-breeder-application-" + applicationId + ".pdf")
-	                .body(pdfBytes);
+	                        "attachment; filename=\"dog-breeder-application-"
+	                                + applicationId
+	                                + ".zip\"")
+	                .body(zipBytes);
 	    }
 	    @DeleteMapping("/delete/{id}")
 	    public ResponseEntity<AbstractResponse> delete(
