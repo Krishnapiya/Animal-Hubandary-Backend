@@ -5,9 +5,13 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,21 +69,122 @@ public class PetShopRegistrationPdfService {
 
     @Autowired
     private PetShopApplicationDocumentRepository documentRepository;
-    @Value("${application.document.upload-dir:/home/keltron/Documents/uploads/documents}")
+
+    @Value("${application.document.upload-dir:}")
     private String uploadDir;
 
+    /**
+     * Generates the pet shop registration PDF as raw bytes.
+     *
+     * @param applicationId registration application id
+     * @return PDF content
+     */
+    @Transactional(readOnly = true)
+    public byte[] generateApplicationPdf(Long applicationId) {
+        try {
+            PetShopRegistrationViewDto dto =
+                    applicationService.getApplication(applicationId);
+            return buildApplicationPdf(dto, applicationId);
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to generate pet shop application PDF",
+                    e);
+        }
+    }
+
+    /**
+     * Builds a ZIP containing the application PDF and all uploaded attachments.
+     *
+     * @param applicationId registration application id
+     * @return ZIP content
+     */
+    @Transactional(readOnly = true)
+    public byte[] generateApplicationZip(Long applicationId) {
+        try {
+            PetShopRegistrationViewDto dto =
+                    applicationService.getApplication(applicationId);
+            byte[] pdfBytes = buildApplicationPdf(dto, applicationId);
+
+            String pdfFileName = dto.getApplicationNumber() != null
+                    && !dto.getApplicationNumber().isBlank()
+                    ? dto.getApplicationNumber() + ".pdf"
+                    : "PetShopApplication-" + applicationId + ".pdf";
+
+            ByteArrayOutputStream zipOut = new ByteArrayOutputStream();
+            try (ZipOutputStream zip = new ZipOutputStream(zipOut)) {
+                ZipEntry pdfEntry = new ZipEntry(pdfFileName);
+                zip.putNextEntry(pdfEntry);
+                zip.write(pdfBytes);
+                zip.closeEntry();
+
+                List<PetShopApplicationDocument> documents =
+                        documentRepository.findByApplication_Id(applicationId);
+
+                Set<String> usedNames = new HashSet<>();
+                usedNames.add(pdfFileName.toLowerCase(Locale.ROOT));
+
+                int index = 1;
+                int attachedCount = 0;
+                for (PetShopApplicationDocument document : documents) {
+                    if (document.getFilePath() == null
+                            || document.getFilePath().isBlank()) {
+                        continue;
+                    }
+
+                    Path filePath = resolveExistingDocumentPath(
+                            document.getFilePath());
+                    if (filePath == null) {
+                        System.out.println(
+                                "ZIP skip missing attachment: "
+                                        + document.getFilePath());
+                        continue;
+                    }
+
+                    String entryName = buildAttachmentEntryName(
+                            document,
+                            index++,
+                            usedNames);
+
+                    ZipEntry attachmentEntry =
+                            new ZipEntry("attachments/" + entryName);
+                    zip.putNextEntry(attachmentEntry);
+                    zip.write(Files.readAllBytes(filePath));
+                    zip.closeEntry();
+                    attachedCount++;
+                }
+
+                System.out.println(
+                        "ZIP attachments included = " + attachedCount
+                                + " for applicationId = " + applicationId);
+            }
+
+            return zipOut.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to generate pet shop application ZIP",
+                    e);
+        }
+    }
+
+    /**
+     * Builds download response with PDF content and headers.
+     *
+     * @param id registration application id
+     * @return PDF download response
+     * @throws Exception if PDF generation fails
+     */
     @Transactional(readOnly = true)
     public ResponseEntity<byte[]> downloadApplication(Long id) throws Exception {
         PetShopRegistrationViewDto dto = applicationService.getApplication(id);
-        byte[] pdfBytes = buildApplicationPdf(dto, id);
+        byte[] zipBytes = generateApplicationZip(id);
 
         String fileName = dto.getApplicationNumber() != null
                 && !dto.getApplicationNumber().isBlank()
-                ? dto.getApplicationNumber() + ".pdf"
-                : "PetShopApplication-" + id + ".pdf";
+                ? dto.getApplicationNumber() + ".zip"
+                : "PetShopApplication-" + id + ".zip";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentType(MediaType.parseMediaType("application/zip"));
         headers.setContentDisposition(
                 ContentDisposition
                         .attachment()
@@ -89,7 +194,7 @@ public class PetShopRegistrationPdfService {
         return ResponseEntity
                 .ok()
                 .headers(headers)
-                .body(pdfBytes);
+                .body(zipBytes);
     }
 
     private byte[] buildApplicationPdf(
@@ -490,26 +595,116 @@ public class PetShopRegistrationPdfService {
     }
 
     private Path resolveDocumentPath(String relativeFilePath) {
-        String normalizedPath = relativeFilePath.replace("\\", "/");
-        Path uploadRoot = getUploadRootPath();
+        Path existing = resolveExistingDocumentPath(relativeFilePath);
+        if (existing != null) {
+            return existing;
+        }
 
+        String normalizedPath = relativeFilePath.replace("\\", "/");
         if (normalizedPath.startsWith("/")) {
             return Paths.get(normalizedPath).normalize();
         }
 
-        return uploadRoot.resolve(normalizedPath).normalize();
+        return getUploadRootPath().resolve(normalizedPath).normalize();
+    }
+
+    /**
+     * Resolves a stored relative/absolute document path against known upload roots.
+     *
+     * @param relativeFilePath path saved in DB
+     * @return readable path if found, otherwise null
+     */
+    private Path resolveExistingDocumentPath(String relativeFilePath) {
+        if (relativeFilePath == null || relativeFilePath.isBlank()) {
+            return null;
+        }
+
+        String normalizedPath = relativeFilePath.replace("\\", "/");
+
+        if (normalizedPath.startsWith("/")) {
+            Path absolute = Paths.get(normalizedPath).normalize();
+            if (Files.exists(absolute) && Files.isReadable(absolute)) {
+                return absolute;
+            }
+        }
+
+        for (Path root : getCandidateUploadRoots()) {
+            Path candidate = root.resolve(normalizedPath).normalize();
+            if (Files.exists(candidate) && Files.isReadable(candidate)) {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     private Path getUploadRootPath() {
-        if (configuredUploadRoot != null && !configuredUploadRoot.isBlank()) {
-            return Paths.get(configuredUploadRoot).normalize();
-        }
+        List<Path> roots = getCandidateUploadRoots();
+        return roots.isEmpty()
+                ? Paths.get(
+                        System.getProperty("user.home"),
+                        "Documents",
+                        "uploads",
+                        "documents")
+                : roots.get(0);
+    }
 
-        return Paths.get(
+    private List<Path> getCandidateUploadRoots() {
+        List<Path> roots = new java.util.ArrayList<>();
+
+        // Same location used by PetShopApplicationDocumentServiceImpl.uploadDocument
+        roots.add(Paths.get(
                 System.getProperty("user.home"),
                 "Documents",
                 "uploads",
-                "documents");
+                "documents"));
+
+        if (configuredUploadRoot != null && !configuredUploadRoot.isBlank()) {
+            roots.add(Paths.get(configuredUploadRoot).normalize());
+        }
+
+        if (uploadDir != null && !uploadDir.isBlank()) {
+            roots.add(Paths.get(uploadDir).toAbsolutePath().normalize());
+        }
+
+        return roots.stream().distinct().toList();
+    }
+
+    private String buildAttachmentEntryName(
+            PetShopApplicationDocument document,
+            int index,
+            Set<String> usedNames) {
+
+        String typePrefix = document.getDocumentType() != null
+                && document.getDocumentType().getName() != null
+                ? sanitizeFileName(document.getDocumentType().getName())
+                : "document";
+
+        String originalName = document.getFileName() != null
+                && !document.getFileName().isBlank()
+                ? document.getFileName()
+                : Paths.get(document.getFilePath()).getFileName().toString();
+
+        String entryName = typePrefix + "_" + index + "_" + sanitizeFileName(originalName);
+        String key = entryName.toLowerCase(Locale.ROOT);
+        int duplicate = 1;
+
+        while (usedNames.contains(key)) {
+            entryName = typePrefix + "_" + index + "_" + duplicate + "_"
+                    + sanitizeFileName(originalName);
+            key = entryName.toLowerCase(Locale.ROOT);
+            duplicate++;
+        }
+
+        usedNames.add(key);
+        return entryName;
+    }
+
+    private String sanitizeFileName(String name) {
+        if (name == null || name.isBlank()) {
+            return "file";
+        }
+        return name.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
     }
 
     private String formatAddress(PetShopRegistrationViewDto dto) {

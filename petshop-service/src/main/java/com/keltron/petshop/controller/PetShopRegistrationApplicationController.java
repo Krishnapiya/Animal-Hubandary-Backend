@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 // ************* CHANGED *************
 import com.keltron.petshop.dto.PetShopRegistrationApplicationDto;
+import com.keltron.petshop.dto.PetShopRegistrationViewDto;
 import com.keltron.petshop.predicates.PetShopRegistrationApplicationPredicates;
 import com.keltron.petshop.searchbean.PetShopRegistrationApplicationSearchBean;
 import com.keltron.petshop.services.impl.PetShopRegistrationApplicationServiceImpl;
@@ -173,14 +174,21 @@ public class PetShopRegistrationApplicationController
             @PathVariable Long id)
             throws Exception {
 
-        byte[] pdf = pdfService.generateApplicationPdf(id);
+        PetShopRegistrationViewDto view =
+                serviceImpl.getApplication(id);
+        byte[] zipBytes = pdfService.generateApplicationZip(id);
+
+        String fileName = view.getApplicationNumber() != null
+                && !view.getApplicationNumber().isBlank()
+                ? view.getApplicationNumber() + ".zip"
+                : "PetShopApplication-" + id + ".zip";
 
         return ResponseEntity.ok()
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=PetShopApplication.pdf")
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(pdf);
+                        "attachment; filename=\"" + fileName + "\"")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(zipBytes);
     }
     @PatchMapping("/forward/{id}")
     public ResponseEntity<AbstractResponse> forwardApplication(
