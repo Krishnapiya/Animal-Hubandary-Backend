@@ -62,6 +62,12 @@ public class PetShopDetail extends AbstractEntity {
 
     @Column(name = "registration_details")
     private String registrationDetails;
+    
+    @Column(name = "father_or_husband_name")
+    private String fatherOrHusbandName;
+
+    @Column(name = "age")
+    private Integer age;
 
     @Override
     public <K extends AbstractDto> void copyFromDTO(K dto) {
@@ -96,6 +102,8 @@ public class PetShopDetail extends AbstractEntity {
         this.latitude = petShopDetailDto.getLatitude();
         this.longitude = petShopDetailDto.getLongitude();
         this.registrationDetails = petShopDetailDto.getRegistrationDetails();
+        this.fatherOrHusbandName = petShopDetailDto.getFatherOrHusbandName();
+        this.age = petShopDetailDto.getAge();
     }
 
     @Override
@@ -116,6 +124,8 @@ public class PetShopDetail extends AbstractEntity {
         dto.setLatitude(latitude);
         dto.setLongitude(longitude);
         dto.setRegistrationDetails(registrationDetails);
+        dto.setFatherOrHusbandName(fatherOrHusbandName);
+        dto.setAge(age);
 
         return dto;
     }

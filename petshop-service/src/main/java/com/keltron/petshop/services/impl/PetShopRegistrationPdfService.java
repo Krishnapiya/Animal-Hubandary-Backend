@@ -65,6 +65,8 @@ public class PetShopRegistrationPdfService {
 
     @Autowired
     private PetShopApplicationDocumentRepository documentRepository;
+    @Value("${application.document.upload-dir:/home/keltron/Documents/uploads/documents}")
+    private String uploadDir;
 
     @Transactional(readOnly = true)
     public ResponseEntity<byte[]> downloadApplication(Long id) throws Exception {
@@ -588,5 +590,40 @@ public class PetShopRegistrationPdfService {
         PdfPCell cell = new PdfPCell(new Paragraph(value(text), NORMAL_FONT));
         cell.setPadding(5);
         return cell;
+    }
+    private Path resolveFilePath(String filePath) {
+
+        if (filePath == null || filePath.trim().isEmpty() || "-".equals(filePath)) {
+            return null;
+        }
+
+        String normalizedPath = filePath.replace("\\", "/");
+
+        if (normalizedPath.startsWith("/")) {
+            normalizedPath = normalizedPath.substring(1);
+        }
+
+        Path directPath = Paths.get(normalizedPath);
+
+        if (Files.exists(directPath)) {
+            return directPath;
+        }
+
+        Path uploadPath = Paths.get(uploadDir);
+
+        String uploadFolderName = uploadPath.getFileName() != null
+                ? uploadPath.getFileName().toString()
+                : "";
+
+        if (!uploadFolderName.isEmpty()
+                && normalizedPath.startsWith(uploadFolderName + "/")) {
+
+            String strippedPath =
+                    normalizedPath.substring(uploadFolderName.length() + 1);
+
+            return uploadPath.resolve(strippedPath).normalize();
+        }
+
+        return uploadPath.resolve(normalizedPath).normalize();
     }
 }

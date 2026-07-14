@@ -94,6 +94,8 @@ public class PetShopOwnerApplicationService {
         draft.setOwnerName(detail.getOwnerName());
         draft.setShopAddressLine1(detail.getAddressLine1());
         draft.setShopAddressLine2(detail.getAddressLine2());
+        draft.setFatherOrHusbandName(detail.getFatherOrHusbandName());
+        draft.setAge(detail.getAge());
         draft.setShopCity(detail.getCity());
         draft.setShopPincode(detail.getPincode());
         draft.setContactMobile(detail.getContactMobile());
@@ -148,6 +150,8 @@ public class PetShopOwnerApplicationService {
         detail.setOwnerName(dto.getOwnerName().trim());
         detail.setAddressLine1(resolveLine(dto.getShopAddressLine1()));
         detail.setAddressLine2(dto.getShopAddressLine2());
+        detail.setFatherOrHusbandName(dto.getFatherOrHusbandName());
+        detail.setAge(dto.getAge());
         detail.setCity(dto.getShopCity());
         detail.setPincode(dto.getShopPincode());
         detail.setContactMobile(dto.getContactMobile().trim());
