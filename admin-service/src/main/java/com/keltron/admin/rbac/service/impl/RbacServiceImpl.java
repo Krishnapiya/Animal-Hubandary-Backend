@@ -196,17 +196,28 @@ public class RbacServiceImpl implements RbacService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getNavigationForCurrentUser(List<String> roleNames) {
         boolean isAdmin = roleNames != null && roleNames.stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(r));
+        Map<String, Map<String, Boolean>> rolePermissions = getPermissionsForCurrentUser(roleNames);
+
+        Set<String> allowedMenus = rolePermissions.entrySet().stream()
+            .filter(e -> Boolean.TRUE.equals(e.getValue().get("list")))
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
+
         List<MenuMaster> allMenus;
         if (isAdmin) {
             allMenus = menuRepository.findAll().stream()
                 .filter(menu -> Boolean.TRUE.equals(menu.getActive()))
+                .filter(menu -> menu.getSlug() != null)
+                .filter(menu -> {
+                    String slug = menu.getSlug().toLowerCase(Locale.ROOT);
+                    Map<String, Boolean> menuPerm = rolePermissions.get(slug);
+                    if (menuPerm == null || !menuPerm.containsKey("list")) {
+                        return true;
+                    }
+                    return Boolean.TRUE.equals(menuPerm.get("list"));
+                })
                 .toList();
         } else {
-            Set<String> allowedMenus = getPermissionsForCurrentUser(roleNames).entrySet().stream()
-                .filter(e -> Boolean.TRUE.equals(e.getValue().get("list")))
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-
             allMenus = menuRepository.findAll().stream()
                 .filter(menu -> menu.getSlug() != null
                     && allowedMenus.contains(menu.getSlug().toLowerCase(Locale.ROOT))
