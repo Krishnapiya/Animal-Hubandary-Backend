@@ -131,26 +131,9 @@ public class PetShopRegistrationApplicationController
                     .build();
         }
 
-        return asDropdown
-                ? new ResponseBuilder()
-                        .withData(
-                                serviceImpl.findByCriteria(
-                                        PetShopRegistrationApplicationPredicates
-                                                .createPredicate(searchBean),
-                                        searchBean.getDataSort(),
-                                        asDropdown,
-                                        searchBean.getPageNo(),
-                                        searchBean.getPageSize()))
-                        .build()
-                : new ResponseBuilder()
-                        .withData(
-                                serviceImpl.findByCriteria(
-                                        PetShopRegistrationApplicationPredicates
-                                                .createPredicate(searchBean),
-                                        searchBean.getDataSort(),
-                                        searchBean.getPageNo(),
-                                        searchBean.getPageSize()))
-                        .build();
+        return new ResponseBuilder()
+                .withData(serviceImpl.getPetShopApplications())
+                .build();
     }
     @GetMapping("/view/{id}")
     public ResponseEntity<AbstractResponse> viewApplication(

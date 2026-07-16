@@ -34,4 +34,8 @@ public interface PetShopRegistrationApplicationRepository
             Long cvOfficeId);
     
     List<PetShopRegistrationApplication> findByCvOfficeId(Long cvOfficeId);
+    List<PetShopRegistrationApplication>
+    findByEntityTypeAndStatus_StatusCodeInOrderByIdDesc(
+            String entityType,
+            List<String> statusCodes);
 }

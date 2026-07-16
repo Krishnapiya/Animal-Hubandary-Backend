@@ -96,6 +96,7 @@ public class PetShopRegistrationApplicationServiceImpl
                         .map(PetShopProposedAnimal::toDTO)
                         .toList();
         
+        
 
         PetShopRegistrationViewDto dto =
                 new PetShopRegistrationViewDto();
@@ -196,6 +197,17 @@ public class PetShopRegistrationApplicationServiceImpl
         dto.setSupportingDocuments(documents);
 
         return dto;
+    }
+    @Transactional(readOnly = true)
+    public List<PetShopRegistrationApplicationDto> getPetShopApplications() {
+
+        return repository
+                .findByEntityTypeAndStatus_StatusCodeInOrderByIdDesc(
+                        "PET_SHOP",
+                        List.of("SUBMITTED", "FORWARDED_TO_CVO"))
+                .stream()
+                .map(PetShopRegistrationApplication::toDTO)
+                .toList();
     }
     @Transactional
     public PetShopRegistrationApplicationDto forwardApplication(Long id) {

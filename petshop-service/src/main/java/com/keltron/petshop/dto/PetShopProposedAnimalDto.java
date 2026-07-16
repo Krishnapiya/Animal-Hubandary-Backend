@@ -39,6 +39,8 @@ public class PetShopProposedAnimalDto extends AbstractDto {
 	private String ageDescription;
 
 	private Integer displayOrder;
+	
+	private String gender;
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -66,6 +68,7 @@ public class PetShopProposedAnimalDto extends AbstractDto {
 		    entity.setSpecies(animalSpecies);
 		}
 		entity.setBreed(breed);
+		entity.setGender(gender);
 		entity.setQuantity(quantity);
 		entity.setDescription(description);
 		entity.setPriceOffered(priceOffered);
@@ -91,6 +94,15 @@ public class PetShopProposedAnimalDto extends AbstractDto {
 
 			if (species == null || species.getId() == null) {
 			    addError("species", species);
+			}
+			if (ValidationUtils.isValid(gender)) {
+
+			    if (!gender.equals("Male")
+			            && !gender.equals("Female")
+			            && !gender.equals("Both")) {
+
+			        addError("gender", gender);
+			    }
 			}
 			if (ValidationUtils.isValid(recordKind)) {
 				if (!recordKind.equals("PROPOSED") && !recordKind.equals("RENEWAL_STOCK")) {
