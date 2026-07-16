@@ -1,10 +1,15 @@
 package com.keltron.dogbreeder.controller;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -14,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.keltron.dogbreeder.dto.DogBreederRegistrationApplicationDto;
 import com.keltron.dogbreeder.predicates.DogBreederRegistrationApplicationPredicates;
@@ -21,123 +27,220 @@ import com.keltron.dogbreeder.searchbean.DogBreederRegistrationApplicationSearch
 import com.keltron.dogbreeder.services.impl.DogBreederRegistrationApplicationPdfService;
 import com.keltron.dogbreeder.services.impl.DogBreederRegistrationApplicationServiceImpl;
 import com.keltron.utility.ResponseBuilder;
+import com.keltron.utility.jpa.entity.District;
+import com.keltron.utility.jpa.entity.Office;
+import com.keltron.utility.jpa.entity.Users;
+import com.keltron.utility.jpa.repository.UsersRepository;
 import com.keltron.utility.requests.Request;
 import com.keltron.utility.responses.AbstractResponse;
 import com.keltron.utility.web.controller.abs.AbstractController;
 
 import jakarta.validation.Valid;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 
 @RestController
-@RequestMapping(value = "dogbreeder/auth/registration-application")
-@PreAuthorize("hasRole('ADMIN')")
-public class DogBreederRegistrationApplicationController extends AbstractController {
-	
-	 @Autowired
-	    private DogBreederRegistrationApplicationServiceImpl serviceImpl;
-	 
-	 @Autowired
-	 private DogBreederRegistrationApplicationPdfService pdfService;
+@RequestMapping("dogbreeder/auth/registration-application")
+public class DogBreederRegistrationApplicationController
+        extends AbstractController {
 
-	    @PostMapping("/save")
-	    public ResponseEntity<AbstractResponse> save(
-	            @Valid @RequestBody Request<DogBreederRegistrationApplicationDto> request) {
+    private static final String ADMIN_AUTHORITY =
+            "hasAnyAuthority('ADMIN', 'ROLE_ADMIN')";
 
-	        if (!(request.isValid()
-	                && request.getPayLoad().isValid(HttpMethod.POST))) {
+    private static final String ADMIN_OR_CVO_AUTHORITY =
+            "hasAnyAuthority("
+                    + "'ADMIN', 'ROLE_ADMIN', "
+                    + "'CVO', 'ROLE_CVO'"
+                    + ")";
 
-	            return new ResponseBuilder()
-	                    .withError(
-	                            HttpStatus.BAD_REQUEST,
-	                            request.getPayLoad().getErrors())
-	                    .build();
-	        }
+    @Autowired
+    private DogBreederRegistrationApplicationServiceImpl serviceImpl;
 
-	        return new ResponseBuilder()
-	                .withData(
-	                        serviceImpl.save(
-	                                request.getPayLoad())
-	                                .toDTO())
-	                .build();
-	    }
-	    @PatchMapping("/save")
-	    public ResponseEntity<AbstractResponse> update(
-	            @Valid @RequestBody Request<DogBreederRegistrationApplicationDto> request) {
+    @Autowired
+    private DogBreederRegistrationApplicationPdfService pdfService;
+    
+    @Autowired
+    private UsersRepository usersRepository;
 
-	        System.out.println("PATCH DTO = " + request.getPayLoad());
+    /**
+     * Save application — Admin only.
+     */
+    @PostMapping("/save")
+    @PreAuthorize(ADMIN_AUTHORITY)
+    public ResponseEntity<AbstractResponse> save(
+            @Valid
+            @RequestBody
+            Request<DogBreederRegistrationApplicationDto> request) {
 
-	        return new ResponseBuilder()
-	                .withData(
-	                        serviceImpl.update(
-	                                request.getPayLoad().getId(),
-	                                request.getPayLoad())
-	                                .toDTO())
-	                .build();
-	    }
+        if (!(request.isValid()
+                && request.getPayLoad().isValid(HttpMethod.POST))) {
 
+            return new ResponseBuilder()
+                    .withError(
+                            HttpStatus.BAD_REQUEST,
+                            request.getPayLoad().getErrors())
+                    .build();
+        }
 
-	    @GetMapping("/list/all")
-	    public ResponseEntity<AbstractResponse> findByCriteria(
-	            @RequestParam(
-	                    name = "dropDown",
-	                    required = false,
-	                    defaultValue = "false")
-	            boolean asDropdown,
+        return new ResponseBuilder()
+                .withData(
+                        serviceImpl
+                                .save(request.getPayLoad())
+                                .toDTO())
+                .build();
+    }
 
-	            @Valid DogBreederRegistrationApplicationSearchBean searchBean) {
+    /**
+     * Update application — Admin only.
+     */
+    @PatchMapping("/save")
+    @PreAuthorize(ADMIN_AUTHORITY)
+    public ResponseEntity<AbstractResponse> update(
+            @Valid
+            @RequestBody
+            Request<DogBreederRegistrationApplicationDto> request) {
 
-	        searchBean.setEntityType("DOG_BREEDER");
+        return new ResponseBuilder()
+                .withData(
+                        serviceImpl
+                                .update(
+                                        request.getPayLoad().getId(),
+                                        request.getPayLoad())
+                                .toDTO())
+                .build();
+    }
 
-	        return asDropdown
-	                ? new ResponseBuilder()
-	                        .withData(
-	                                serviceImpl.findByCriteria(
-	                                        DogBreederRegistrationApplicationPredicates
-	                                                .createPredicate(searchBean),
-	                                        searchBean.getDataSort(),
-	                                        asDropdown,
-	                                        searchBean.getPageNo(),
-	                                        searchBean.getPageSize()))
-	                        .build()
-	                : new ResponseBuilder()
-	                        .withData(
-	                                serviceImpl.findByCriteria(
-	                                        DogBreederRegistrationApplicationPredicates
-	                                                .createPredicate(searchBean),
-	                                        searchBean.getDataSort(),
-	                                        searchBean.getPageNo(),
-	                                        searchBean.getPageSize()))
-	                        .build();
-	    }
-	    @GetMapping("/preview/{applicationId}")
-	    public ResponseEntity<AbstractResponse> preview(
-	            @PathVariable Long applicationId) {
+    /**
+     * Admin list.
+     */
+    @GetMapping("/list/all")
+    @PreAuthorize(ADMIN_AUTHORITY)
+    public ResponseEntity<AbstractResponse> findByCriteria(
+            @RequestParam(
+                    name = "dropDown",
+                    required = false,
+                    defaultValue = "false")
+            boolean asDropdown,
+            @Valid
+            DogBreederRegistrationApplicationSearchBean searchBean) {
 
-	        return new ResponseBuilder()
-	                .withData(serviceImpl.getPreview(applicationId))
-	                .build();
-	    }
-	    @GetMapping("/download/{applicationId}")
-	    public ResponseEntity<byte[]> download(@PathVariable Long applicationId) {
+        searchBean.setEntityType("DOG_BREEDER");
 
-	        byte[] pdfBytes = pdfService.generateApplicationPdf(applicationId);
+        if (asDropdown) {
+            return new ResponseBuilder()
+                    .withData(
+                            serviceImpl.findByCriteria(
+                                    DogBreederRegistrationApplicationPredicates
+                                            .createPredicate(searchBean),
+                                    searchBean.getDataSort(),
+                                    true,
+                                    searchBean.getPageNo(),
+                                    searchBean.getPageSize()))
+                    .build();
+        }
 
-	        return ResponseEntity.ok()
-	                .contentType(MediaType.APPLICATION_PDF)
-	                .header(
-	                        HttpHeaders.CONTENT_DISPOSITION,
-	                        "attachment; filename=dog-breeder-application-" + applicationId + ".pdf")
-	                .body(pdfBytes);
-	    }
-	    @DeleteMapping("/delete/{id}")
-	    public ResponseEntity<AbstractResponse> delete(
-	            @Valid @PathVariable Long id) {
+        return new ResponseBuilder()
+                .withData(
+                        serviceImpl.findByCriteria(
+                                DogBreederRegistrationApplicationPredicates
+                                        .createPredicate(searchBean),
+                                searchBean.getDataSort(),
+                                searchBean.getPageNo(),
+                                searchBean.getPageSize()))
+                .build();
+    }
 
-	        return new ResponseBuilder()
-	                .withData(serviceImpl.delete(id))
-	                .build();
-	    }
-	   
-	    
+    /**
+     * Admin and CVO application preview.
+     */
+    @GetMapping("/preview/{applicationId}")
+    @PreAuthorize(ADMIN_OR_CVO_AUTHORITY)
+    public ResponseEntity<AbstractResponse> preview(
+            @PathVariable Long applicationId) {
+
+        return new ResponseBuilder()
+                .withData(
+                        serviceImpl.getPreview(applicationId))
+                .build();
+    }
+
+    /**
+     * Admin and CVO PDF download.
+     */
+    @GetMapping("/download/{applicationId}")
+    @PreAuthorize(ADMIN_OR_CVO_AUTHORITY)
+    public ResponseEntity<byte[]> download(
+            @PathVariable Long applicationId) {
+
+        byte[] pdfBytes =
+                pdfService.generateApplicationPdf(applicationId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=dog-breeder-application-"
+                                + applicationId
+                                + ".pdf")
+                .body(pdfBytes);
+    }
+
+    /**
+     * Forward application — Admin only.
+     */
+    @PostMapping("/{applicationId}/forward")
+    @PreAuthorize(ADMIN_AUTHORITY)
+    public ResponseEntity<AbstractResponse> forwardToCvo(
+            @PathVariable Long applicationId) {
+
+        return new ResponseBuilder()
+                .withData(
+                        serviceImpl.forwardToCvo(applicationId))
+                .build();
+    }
+
+    /**
+     * CVO list.
+     *
+     * District ID is taken from the logged-in CVO JWT.
+     * The frontend must not send districtId.
+     */
+    @Transactional
+    @GetMapping("/cvo/list/all")
+    public ResponseEntity<AbstractResponse> findCvoForwardedApplications(
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String username = jwt.getSubject();
+
+        Users user = usersRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Office office = user.getOffice();
+
+        if (office == null) {
+            throw new RuntimeException("Office not mapped to user");
+        }
+
+        District district = office.getDistrict();  
+
+        if (district == null) {
+            throw new RuntimeException("District not mapped to Office");
+        }
+
+        Integer districtId = district.getId();
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.getCvoForwardedApplications(districtId))
+                .build();
+    }
+    /**
+     * Delete application — Admin only.
+     */
+    @DeleteMapping("/delete/{id}")
+    @PreAuthorize(ADMIN_AUTHORITY)
+    public ResponseEntity<AbstractResponse> delete(
+            @PathVariable Long id) {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.delete(id))
+                .build();
+    }
 }

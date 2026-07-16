@@ -44,22 +44,27 @@ public class Office extends AbstractEntity {
     @JoinColumn(name = "parent_id")
     private Office parent;
 
-    /** Geographic district (awb.district). NULL for Head Office; set for CVO / district offices. */
-    @Column(name = "district_id")
-    private Long districtId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "district_id")
+    private District district;
 
     @Override
     public <K extends AbstractDto> void copyFromDTO(K dto) {
+
         OfficeDto d = (OfficeDto) dto;
+
         if (ValidationUtils.isValid(d.getId())) {
             id = d.getId();
         }
+
         if (ValidationUtils.isValid(d.getOfficeType())) {
             officeType = d.getOfficeType();
         }
+
         if (ValidationUtils.isValid(d.getName())) {
             name = d.getName();
         }
+
         if (ValidationUtils.isValid(d.getParentId())) {
             if (id != null && d.getParentId().equals(id)) {
                 parent = null;
@@ -71,19 +76,26 @@ public class Office extends AbstractEntity {
         } else {
             parent = null;
         }
+
         if (ValidationUtils.isValid(d.getDistrictId())) {
-            districtId = d.getDistrictId();
+            District district = new District();
+            district.setId(d.getDistrictId());
+            this.district = district;
         } else {
-            districtId = null;
+            this.district = null;
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public OfficeDto toDTO() {
+
         OfficeDto dto = new OfficeDto();
+
         dto.setId(id);
         dto.setOfficeType(officeType);
         dto.setName(name);
+
         if (parent != null) {
             dto.setParentId(parent.getId());
             dto.setParentName(parent.getName());
@@ -91,15 +103,25 @@ public class Office extends AbstractEntity {
             dto.setParentId(null);
             dto.setParentName(null);
         }
-        dto.setDistrictId(districtId);
+
+        if (district != null) {
+            dto.setDistrictId(district.getId());
+            dto.setDistrictName(district.getName());
+        } else {
+            dto.setDistrictId(null);
+            dto.setDistrictName(null);
+        }
+
         return dto;
     }
 
     @Override
     public DropdownPayload<Integer> toDropDownPayload() {
+
         DropdownPayload<Integer> payload = new DropdownPayload<>();
         payload.setId(id);
         payload.setName(name);
+
         return payload;
     }
 }
