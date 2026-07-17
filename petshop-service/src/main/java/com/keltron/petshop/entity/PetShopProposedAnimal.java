@@ -67,6 +67,9 @@ public class PetShopProposedAnimal extends AbstractEntity {
 
 	@Column(name = "display_order", nullable = false)
 	private Integer displayOrder = 0;
+	
+	@Column(name = "gender")
+	private String gender;
 
 	public PetShopProposedAnimal(Long id) {
 		this.id = id;
@@ -103,6 +106,9 @@ public class PetShopProposedAnimal extends AbstractEntity {
 
 		if (ValidationUtils.isValid(animalDto.getBreed())) {
 			breed = animalDto.getBreed();
+		}
+		if (ValidationUtils.isValid(animalDto.getGender())) {
+		    gender = animalDto.getGender();
 		}
 
 		// Null check used because 0 is valid in DB
@@ -156,6 +162,7 @@ public class PetShopProposedAnimal extends AbstractEntity {
 		    dto.setSpecies(speciesPayload);
 		}
 		dto.setBreed(breed);
+		dto.setGender(gender);
 		dto.setQuantity(quantity);
 		dto.setDescription(description);
 		dto.setPriceOffered(priceOffered);

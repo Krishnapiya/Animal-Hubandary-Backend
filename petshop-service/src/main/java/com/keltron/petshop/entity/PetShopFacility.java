@@ -69,6 +69,33 @@ public class PetShopFacility extends AbstractEntity {
 
     @Column(name = "veterinary_support_arrangement")
     private String veterinarySupportArrangement;
+    
+    @Column(name = "ventilation_available")
+    private Boolean ventilationAvailable;
+
+    @Column(name = "lighting_available")
+    private Boolean lightingAvailable;
+
+    @Column(name = "fire_safety_available")
+    private Boolean fireSafetyAvailable;
+
+    @Column(name = "heating_cooling_available")
+    private Boolean heatingCoolingAvailable;
+
+    @Column(name = "power_backup_available")
+    private Boolean powerBackupAvailable;
+
+    @Column(name = "food_storage_available")
+    private Boolean foodStorageAvailable;
+
+    @Column(name = "cleanliness_waste_available")
+    private Boolean cleanlinessWasteAvailable;
+
+    @Column(name = "dead_animal_disposal_available")
+    private Boolean deadAnimalDisposalAvailable;
+
+    @Column(name = "veterinary_support_available")
+    private Boolean veterinarySupportAvailable;
 
     @Override
     public <K extends AbstractDto> void copyFromDTO(K dto) {
@@ -89,6 +116,33 @@ public class PetShopFacility extends AbstractEntity {
 
         this.restDay =
                 facilityDto.getRestDay();
+        
+        this.ventilationAvailable =
+                facilityDto.getVentilationAvailable();
+
+        this.lightingAvailable =
+                facilityDto.getLightingAvailable();
+
+        this.fireSafetyAvailable =
+                facilityDto.getFireSafetyAvailable();
+
+        this.heatingCoolingAvailable =
+                facilityDto.getHeatingCoolingAvailable();
+
+        this.powerBackupAvailable =
+                facilityDto.getPowerBackupAvailable();
+
+        this.foodStorageAvailable =
+                facilityDto.getFoodStorageAvailable();
+
+        this.cleanlinessWasteAvailable =
+                facilityDto.getCleanlinessWasteAvailable();
+
+        this.deadAnimalDisposalAvailable =
+                facilityDto.getDeadAnimalDisposalAvailable();
+
+        this.veterinarySupportAvailable =
+                facilityDto.getVeterinarySupportAvailable();
 
         this.ventilationArrangement =
                 facilityDto.getVentilationArrangement();
@@ -125,17 +179,36 @@ public class PetShopFacility extends AbstractEntity {
 
         dto.setId(id);
         dto.setPetShopDetailId(petShopDetailId);
+
         dto.setAccommodationInfrastructure(accommodationInfrastructure);
         dto.setWorkingHours(workingHours);
         dto.setRestDay(restDay);
+
+        dto.setVentilationAvailable(ventilationAvailable);
         dto.setVentilationArrangement(ventilationArrangement);
+
+        dto.setLightingAvailable(lightingAvailable);
         dto.setLightingArrangement(lightingArrangement);
+
+        dto.setFireSafetyAvailable(fireSafetyAvailable);
         dto.setFireSafetyArrangement(fireSafetyArrangement);
+
+        dto.setHeatingCoolingAvailable(heatingCoolingAvailable);
         dto.setHeatingCoolingArrangement(heatingCoolingArrangement);
+
+        dto.setPowerBackupAvailable(powerBackupAvailable);
         dto.setPowerBackupArrangement(powerBackupArrangement);
+
+        dto.setFoodStorageAvailable(foodStorageAvailable);
         dto.setFoodStorageArrangement(foodStorageArrangement);
+
+        dto.setCleanlinessWasteAvailable(cleanlinessWasteAvailable);
         dto.setCleanlinessWasteArrangement(cleanlinessWasteArrangement);
+
+        dto.setDeadAnimalDisposalAvailable(deadAnimalDisposalAvailable);
         dto.setDeadAnimalDisposalArrangement(deadAnimalDisposalArrangement);
+
+        dto.setVeterinarySupportAvailable(veterinarySupportAvailable);
         dto.setVeterinarySupportArrangement(veterinarySupportArrangement);
 
         return dto;

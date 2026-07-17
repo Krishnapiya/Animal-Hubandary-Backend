@@ -56,7 +56,8 @@ public class PetShopOwnerRegistrationService {
         if (isBlank(dto.getPassword()) || dto.getPassword().length() < 8) {
             errors.put("password", "Password must be at least 8 characters");
         }
-        if (!dto.getPassword().equals(dto.getConfirmPassword())) {
+        if (dto.getPassword() != null
+                && !dto.getPassword().equals(dto.getConfirmPassword())) {
             errors.put("confirmPassword", "Passwords do not match");
         }
         if (!errors.containsKey("username")

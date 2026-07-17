@@ -111,6 +111,9 @@ public class DogBreederRegistrationApplicationController
     /**
      * Admin list.
      */
+    /**
+     * Admin list.
+     */
     @GetMapping("/list/all")
     @PreAuthorize(ADMIN_AUTHORITY)
     public ResponseEntity<AbstractResponse> findByCriteria(
@@ -119,8 +122,7 @@ public class DogBreederRegistrationApplicationController
                     required = false,
                     defaultValue = "false")
             boolean asDropdown,
-            @Valid
-            DogBreederRegistrationApplicationSearchBean searchBean) {
+            @Valid DogBreederRegistrationApplicationSearchBean searchBean) {
 
         searchBean.setEntityType("DOG_BREEDER");
 
@@ -147,7 +149,20 @@ public class DogBreederRegistrationApplicationController
                                 searchBean.getPageSize()))
                 .build();
     }
+    @GetMapping("/download/{applicationId}")
+    public ResponseEntity<byte[]> download(@PathVariable Long applicationId) {
 
+        byte[] zipBytes = pdfService.generateApplicationZip(applicationId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"dog-breeder-application-"
+                                + applicationId
+                                + ".zip\"")
+                .body(zipBytes);
+    }
     /**
      * Admin and CVO application preview.
      */
@@ -165,23 +180,23 @@ public class DogBreederRegistrationApplicationController
     /**
      * Admin and CVO PDF download.
      */
-    @GetMapping("/download/{applicationId}")
-    @PreAuthorize(ADMIN_OR_CVO_AUTHORITY)
-    public ResponseEntity<byte[]> download(
-            @PathVariable Long applicationId) {
-
-        byte[] pdfBytes =
-                pdfService.generateApplicationPdf(applicationId);
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_PDF)
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=dog-breeder-application-"
-                                + applicationId
-                                + ".pdf")
-                .body(pdfBytes);
-    }
+//    @GetMapping("/download/{applicationId}")
+//    @PreAuthorize(ADMIN_OR_CVO_AUTHORITY)
+//    public ResponseEntity<byte[]> download(
+//            @PathVariable Long applicationId) {
+//
+//        byte[] pdfBytes =
+//                pdfService.generateApplicationPdf(applicationId);
+//
+//        return ResponseEntity.ok()
+//                .contentType(MediaType.APPLICATION_PDF)
+//                .header(
+//                        HttpHeaders.CONTENT_DISPOSITION,
+//                        "attachment; filename=dog-breeder-application-"
+//                                + applicationId
+//                                + ".pdf")
+//                .body(pdfBytes);
+//    }
 
     /**
      * Forward application — Admin only.

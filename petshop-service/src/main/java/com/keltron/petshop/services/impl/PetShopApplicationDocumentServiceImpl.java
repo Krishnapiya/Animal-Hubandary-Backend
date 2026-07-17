@@ -11,6 +11,8 @@ import java.util.List;
 
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -150,11 +152,33 @@ public class PetShopApplicationDocumentServiceImpl
 
         String contentType = Files.probeContentType(filePath);
 
+        if (contentType == null || contentType.isBlank()) {
+            String lowerName = fileName.toLowerCase();
+
+            if (lowerName.endsWith(".pdf")) {
+                contentType = "application/pdf";
+            } else if (lowerName.endsWith(".png")) {
+                contentType = "image/png";
+            } else if (lowerName.endsWith(".jpg")
+                    || lowerName.endsWith(".jpeg")) {
+                contentType = "image/jpeg";
+            } else {
+                contentType = "application/octet-stream";
+            }
+        }
+
+        String displayName = fileName.contains("/")
+                ? fileName.substring(fileName.lastIndexOf('/') + 1)
+                : fileName;
+
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(
-                        contentType != null
-                                ? contentType
-                                : "application/octet-stream"))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline()
+                                .filename(displayName)
+                                .build()
+                                .toString())
+                .contentType(MediaType.parseMediaType(contentType))
                 .body(resource);
     }
 }
