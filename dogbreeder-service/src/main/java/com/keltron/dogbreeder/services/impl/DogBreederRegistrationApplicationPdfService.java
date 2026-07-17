@@ -43,6 +43,9 @@ public class DogBreederRegistrationApplicationPdfService {
     private static final Font NORMAL_FONT =
             FontFactory.getFont(FontFactory.HELVETICA, 10);
 
+    @Value("${dogbreeder.document.upload-root:}")
+    private String configuredUploadRoot;
+
     @Autowired
     private DogBreederRegistrationApplicationServiceImpl applicationService;
 
