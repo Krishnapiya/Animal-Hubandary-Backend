@@ -86,7 +86,18 @@ public class DogBreederFacilityServiceImpl extends AbstractJpaService<
 
         facility.setAccommodationInfrastructure(dto.getAccommodationInfrastructure());
         facility.setWorkingHours(dto.getWorkingHours());
-        facility.setRestDay(dto.getRestDay());
+        facility.setHoliday(dto.getHoliday());
+
+        // Boolean fields
+        facility.setVentilationAvailable(dto.getVentilationAvailable());
+        facility.setLightingAvailable(dto.getLightingAvailable());
+        facility.setHeatingCoolingAvailable(dto.getHeatingCoolingAvailable());
+        facility.setFoodStorageAvailable(dto.getFoodStorageAvailable());
+        facility.setCleanlinessWasteAvailable(dto.getCleanlinessWasteAvailable());
+        facility.setDeadAnimalDisposalAvailable(dto.getDeadAnimalDisposalAvailable());
+        facility.setVeterinarySupportAvailable(dto.getVeterinarySupportAvailable());
+
+        // Arrangement fields
         facility.setVentilationArrangement(dto.getVentilationArrangement());
         facility.setLightingArrangement(dto.getLightingArrangement());
         facility.setHeatingCoolingArrangement(dto.getHeatingCoolingArrangement());
@@ -94,6 +105,7 @@ public class DogBreederFacilityServiceImpl extends AbstractJpaService<
         facility.setCleanlinessWasteArrangement(dto.getCleanlinessWasteArrangement());
         facility.setDeadAnimalDisposalArrangement(dto.getDeadAnimalDisposalArrangement());
         facility.setVeterinarySupportArrangement(dto.getVeterinarySupportArrangement());
+
         facility.setCageEnclosureDetails(dto.getCageEnclosureDetails());
     }
 }
