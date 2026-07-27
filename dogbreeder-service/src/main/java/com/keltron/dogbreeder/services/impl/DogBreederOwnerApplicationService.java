@@ -20,6 +20,7 @@ import com.keltron.dogbreeder.entity.DogBreederBreed;
 import com.keltron.dogbreeder.entity.DogBreederDeclaration;
 import com.keltron.dogbreeder.entity.DogBreederDetail;
 import com.keltron.dogbreeder.entity.DogBreederFacility;
+import com.keltron.dogbreeder.entity.DogBreederRegistrationApplication;
 import com.keltron.dogbreeder.repository.DogBreederApplicationStatusMasterRepository;
 import com.keltron.dogbreeder.repository.DogBreederBreedRepository;
 import com.keltron.dogbreeder.repository.DogBreederDeclarationRepository;
@@ -28,7 +29,6 @@ import com.keltron.dogbreeder.repository.DogBreederFacilityRepository;
 import com.keltron.dogbreeder.repository.DogBreederRegistrationApplicationRepository;
 import com.keltron.utility.jpa.entity.ApplicationStatusMaster;
 import com.keltron.utility.jpa.entity.District;
-import com.keltron.utility.jpa.entity.RegistrationApplication;
 import com.keltron.utility.jpa.entity.Users;
 import com.keltron.utility.jpa.repository.UsersRepository;
 
@@ -87,7 +87,7 @@ public class DogBreederOwnerApplicationService {
 
         Long userId = currentUserId();
 
-        RegistrationApplication application = applicationRepository
+        DogBreederRegistrationApplication application = applicationRepository
                 .findFirstByApplicantUserIdAndEntityTypeAndStatus_StatusCodeOrderByIdDesc(
                         userId,
                         ENTITY_TYPE,
@@ -135,7 +135,7 @@ public class DogBreederOwnerApplicationService {
 
         Long userId = currentUserId();
 
-        RegistrationApplication application = applicationRepository
+        DogBreederRegistrationApplication application = applicationRepository
                 .findFirstByApplicantUserIdAndEntityTypeAndStatus_StatusCodeOrderByIdDesc(
                         userId,
                         ENTITY_TYPE,
@@ -241,7 +241,7 @@ public class DogBreederOwnerApplicationService {
                                 )
                         );
 
-        RegistrationApplication application;
+        DogBreederRegistrationApplication application;
 
         if (dto.getApplicationId() != null) {
             application = applicationRepository
@@ -253,7 +253,7 @@ public class DogBreederOwnerApplicationService {
                             )
                     );
         } else {
-            application = new RegistrationApplication();
+            application = new DogBreederRegistrationApplication();
             application.setEntityType(ENTITY_TYPE);
             application.setApplicationKind(APPLICATION_KIND);
             application.setApplicantUserId(userId);
