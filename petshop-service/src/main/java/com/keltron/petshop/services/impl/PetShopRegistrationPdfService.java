@@ -201,10 +201,13 @@ public class PetShopRegistrationPdfService {
             PetShopRegistrationViewDto dto,
             Long applicationId) throws Exception {
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        Document document = new Document(PageSize.A4, 40, 40, 40, 40);
-        PdfWriter.getInstance(document, out);
-        document.open();
+    	ByteArrayOutputStream out = new ByteArrayOutputStream();
+    	Document document = new Document(PageSize.A4, 40, 40, 40, 40);
+
+    	PdfWriter writer = PdfWriter.getInstance(document, out);
+    	writer.setPageEvent(new WatermarkPageEvent());
+
+    	document.open();
 
         addCenter(document, "KERALA STATE ANIMAL WELFARE BOARD", TITLE_FONT);
         addCenter(document, "THE FIRST SCHEDULE", SUBTITLE_FONT);
