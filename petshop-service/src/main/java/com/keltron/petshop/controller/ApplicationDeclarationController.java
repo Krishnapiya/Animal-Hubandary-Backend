@@ -1,14 +1,10 @@
 package com.keltron.petshop.controller;
 
-import java.io.ByteArrayOutputStream;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +20,6 @@ import com.keltron.petshop.predicates.ApplicationDeclarationPredicates;
 import com.keltron.petshop.searchbean.ApplicationDeclarationSearchBean;
 import com.keltron.petshop.services.impl.ApplicationDeclarationServiceImpl;
 import com.keltron.utility.ResponseBuilder;
-import com.keltron.utility.requests.ExcelExportRequest;
 import com.keltron.utility.requests.Request;
 import com.keltron.utility.responses.AbstractResponse;
 import com.keltron.utility.web.controller.abs.AbstractController;

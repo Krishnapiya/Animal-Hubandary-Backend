@@ -69,7 +69,7 @@ public class DistrictController extends AbstractController {
     }
 
     @GetMapping("/list/all")
-    @RequirePermission(menu = "district", action = "list")
+//    @RequirePermission(menu = "district", action = "list")
     public ResponseEntity<AbstractResponse> findByCriteria(
             @RequestParam(
                     name = "dropDown",

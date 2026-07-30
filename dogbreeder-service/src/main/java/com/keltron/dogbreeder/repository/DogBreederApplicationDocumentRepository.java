@@ -13,4 +13,12 @@ public interface DogBreederApplicationDocumentRepository extends AbstractReposit
 	            Long applicationId,
 	            Long documentTypeId
 	    );
+
+	    List<DogBreederApplicationDocument>
+	            findByApplication_Id(Long applicationId);
+	    
+	    Optional<DogBreederApplicationDocument>
+        findFirstByApplication_IdAndDocumentType_Code(
+                Long applicationId,
+                String code);
 }

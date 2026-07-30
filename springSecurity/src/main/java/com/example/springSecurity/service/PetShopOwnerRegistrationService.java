@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class PetShopOwnerRegistrationService {
 
     private static final String PET_SHOP_OWNER_ROLE = "PET_SHOP_OWNER";
+    private static final String DOG_BREEDER_ROLE = "DOG_BREEDER";
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
     private static final Pattern MOBILE_PATTERN = Pattern.compile("^[0-9]{10}$");
@@ -60,11 +61,15 @@ public class PetShopOwnerRegistrationService {
                 && !dto.getPassword().equals(dto.getConfirmPassword())) {
             errors.put("confirmPassword", "Passwords do not match");
         }
+        String roleName =
+                "DOG_BREEDER".equalsIgnoreCase(dto.getOwnerType())
+                        ? DOG_BREEDER_ROLE
+                        : PET_SHOP_OWNER_ROLE;
+
         if (!errors.containsKey("username")
-                && appUserRepository.findRoleIdByRoleName(PET_SHOP_OWNER_ROLE).isEmpty()) {
-            errors.put("detail",
-                    "Pet shop owner registration is not configured. "
-                            + "Contact support or run AWB database seeds.");
+                && appUserRepository.findRoleIdByRoleName(roleName).isEmpty()) {
+
+            errors.put("detail", roleName + " role is not configured.");
         }
 
         return errors;
@@ -72,29 +77,36 @@ public class PetShopOwnerRegistrationService {
 
     @Transactional
     public Users register(PetShopOwnerRegisterDto dto) {
-        Integer roleId = appUserRepository
-                .findRoleIdByRoleName(PET_SHOP_OWNER_ROLE)
-                .orElse(null);
-        if (roleId == null) {
-            throw new IllegalStateException(
-                    "Role PET_SHOP_OWNER is not configured. "
-                            + "Run admin-service AWB SQL seeds.");
+
+        String roleName;
+
+        if ("DOG_BREEDER".equalsIgnoreCase(dto.getOwnerType())) {
+            roleName = DOG_BREEDER_ROLE;
+        } else {
+            roleName = PET_SHOP_OWNER_ROLE;
         }
 
+        Integer roleId = appUserRepository
+                .findRoleIdByRoleName(roleName)
+                .orElseThrow(() ->
+                        new IllegalStateException("Role not found : " + roleName));
+
         Users user = new Users();
+
         user.setFname(dto.getFname().trim());
         user.setLname(dto.getLname().trim());
         user.setEmail(dto.getEmail().trim().toLowerCase());
         user.setMobileNo(dto.getMobileNo().trim());
         user.setUsername(dto.getUsername().trim());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
+
         RoleMaster role = new RoleMaster(roleId);
-        role.setRoleName(PET_SHOP_OWNER_ROLE);
+        role.setRoleName(roleName);
+
         user.setRole(role);
 
         return appUserRepository.save(user);
     }
-
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
