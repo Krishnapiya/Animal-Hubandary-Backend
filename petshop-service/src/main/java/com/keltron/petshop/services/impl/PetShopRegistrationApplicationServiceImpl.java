@@ -62,6 +62,9 @@ public class PetShopRegistrationApplicationServiceImpl
     @Autowired
     private UsersRepository usersRepository;
     
+    @Autowired
+    private PetShopNotificationServiceImpl notificationService;
+    
     @Transactional(readOnly = true)
     public PetShopRegistrationViewDto getApplication(Long id) {
 
@@ -201,13 +204,21 @@ public class PetShopRegistrationApplicationServiceImpl
     @Transactional(readOnly = true)
     public List<PetShopRegistrationApplicationDto> getPetShopApplications() {
 
-        return repository
-                .findByEntityTypeAndStatus_StatusCodeInOrderByIdDesc(
-                        "PET_SHOP",
-                        List.of("SUBMITTED", "FORWARDED_TO_CVO"))
-                .stream()
-                .map(PetShopRegistrationApplication::toDTO)
-                .toList();
+    	return repository
+    	        .findByEntityTypeAndStatus_StatusCodeInOrderByIdDesc(
+    	                "PET_SHOP",
+    	                List.of(
+    	                        "SUBMITTED",
+    	                        "FORWARDED_TO_CVO",
+    	                        "INSPECTION_SCHEDULED",
+    	                        "VERIFIED_BY_CVO",
+    	                        "REJECTED_BY_CVO",
+    	                        "APPLICATION_APPROVED",
+    	                        "APPLICATION_REJECTED"
+    	                ))
+    	        .stream()
+    	        .map(PetShopRegistrationApplication::toDTO)
+    	        .toList();
     }
     @Transactional
     public PetShopRegistrationApplicationDto forwardApplication(Long id) {
@@ -245,6 +256,14 @@ public class PetShopRegistrationApplicationServiceImpl
         application.setCvOfficeId(Long.valueOf(office.getId()));
 
         repository.save(application);
+
+        notificationService.createNotification(
+                application.getApplicantUserId(),
+                "PET_SHOP",
+                application.getId(),
+                "Application Forwarded",
+                "Your application has been forwarded to the Chief Veterinary Officer for verification.",
+                "INFO");
 
         return application.toDTO();
     }
@@ -300,6 +319,14 @@ public class PetShopRegistrationApplicationServiceImpl
 
         repository.save(application);
 
+        notificationService.createNotification(
+                application.getApplicantUserId(),
+                "PET_SHOP",
+                application.getId(),
+                "Application Submitted",
+                "Your Pet Shop registration application has been submitted successfully.",
+                "INFO");
+
         return application.toDTO();
     }
     
@@ -338,7 +365,65 @@ public class PetShopRegistrationApplicationServiceImpl
 
         return applications;
     }
+    @Transactional
+    public PetShopRegistrationApplicationDto approveApplication(Long id) {
+
+        PetShopRegistrationApplication application =
+                repository.findById(id)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Application not found"));
+
+        application.setStatus(
+                statusRepository.findByStatusCode("APPLICATION_APPROVED")
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Status APPLICATION_APPROVED not found")));
+
+        repository.save(application);
+
+        notificationService.createNotification(
+                application.getApplicantUserId(),
+                "PET_SHOP",
+                application.getId(),
+                "Application Approved",
+                " Your Pet Shop registration application has been approved.",
+                "SUCCESS");
+
+        return application.toDTO();
+    }
     
+    @Transactional
+    public PetShopRegistrationApplicationDto rejectApplication(Long id) {
+
+        PetShopRegistrationApplication application =
+                repository.findById(id)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Application not found"));
+
+        application.setStatus(
+                statusRepository.findByStatusCode("APPLICATION_REJECTED")
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Status APPLICATION_REJECTED not found")));
+
+        repository.save(application);
+
+        notificationService.createNotification(
+                application.getApplicantUserId(),
+                "PET_SHOP",
+                application.getId(),
+                "Application Rejected",
+                "Your Pet Shop registration application has been rejected.",
+                "ERROR");
+
+        return application.toDTO();
+    }
     
 
 }

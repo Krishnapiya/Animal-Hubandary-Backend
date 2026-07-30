@@ -206,6 +206,21 @@ public class PetShopRegistrationApplicationController
                 .withData(serviceImpl.getMyApplications())
                 .build();
     }
+    @PostMapping("/approve/{id}")
+    public ResponseEntity<AbstractResponse> approve(@PathVariable Long id) {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.approveApplication(id))
+                .build();
+    }
+
+    @PostMapping("/reject/{id}")
+    public ResponseEntity<AbstractResponse> reject(@PathVariable Long id) {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.rejectApplication(id))
+                .build();
+    }
     
     
 }

@@ -38,4 +38,9 @@ public interface PetShopRegistrationApplicationRepository
     findByEntityTypeAndStatus_StatusCodeInOrderByIdDesc(
             String entityType,
             List<String> statusCodes);
+    List<PetShopRegistrationApplication>
+    findByEntityTypeAndStatus_StatusCodeAndDistrict_IdOrderByIdDesc(
+            String entityType,
+            String statusCode,
+            Integer districtId);
 }
