@@ -24,7 +24,7 @@ public class DogBreederRegistrationApplicationDto extends AbstractDto{
 	    private String applicationNumber;
 	    private String entityType;
 	    private String applicationKind;
-
+	    private String breederName;
 	    private Long statusId;
 	    private Long applicantUserId;
 	    private Integer districtId;

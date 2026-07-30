@@ -246,6 +246,31 @@ public class DogBreederRegistrationApplicationController
                 .withData(serviceImpl.getCvoForwardedApplications(districtId))
                 .build();
     }
+    
+    /**
+     * Submit application.
+     * Changes status from DRAFT to SUBMITTED.
+     */
+    @PostMapping("/submit/{applicationId}")
+    public ResponseEntity<AbstractResponse> submitApplication(
+            @PathVariable("applicationId") Long applicationId) {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.submitApplication(applicationId))
+                .build();
+    }
+    @GetMapping("/my-applications")
+    public ResponseEntity<AbstractResponse> myApplications(
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String username = jwt.getSubject();
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.getMyApplications(username))
+                .build();
+    }
+    
+
     /**
      * Delete application — Admin only.
      */
