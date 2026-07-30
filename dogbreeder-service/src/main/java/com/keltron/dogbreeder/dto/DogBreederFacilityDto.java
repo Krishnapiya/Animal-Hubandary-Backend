@@ -22,7 +22,17 @@ public class DogBreederFacilityDto extends AbstractDto {
 
     private String accommodationInfrastructure;
     private String workingHours;
-    private String restDay;
+    private String holiday;
+    // Availability (Yes / No)
+    private Boolean ventilationAvailable;
+    private Boolean lightingAvailable;
+    private Boolean heatingCoolingAvailable;
+    private Boolean foodStorageAvailable;
+    private Boolean cleanlinessWasteAvailable;
+    private Boolean deadAnimalDisposalAvailable;
+    private Boolean veterinarySupportAvailable;
+
+    // Description
     private String ventilationArrangement;
     private String lightingArrangement;
     private String heatingCoolingArrangement;
@@ -30,10 +40,11 @@ public class DogBreederFacilityDto extends AbstractDto {
     private String cleanlinessWasteArrangement;
     private String deadAnimalDisposalArrangement;
     private String veterinarySupportArrangement;
+
     private String cageEnclosureDetails;
 
     @SuppressWarnings("unchecked")
-	@Override
+    @Override
     public DogBreederFacility toEntity() {
 
         DogBreederFacility entity = new DogBreederFacility();
@@ -46,7 +57,17 @@ public class DogBreederFacilityDto extends AbstractDto {
 
         entity.setAccommodationInfrastructure(accommodationInfrastructure);
         entity.setWorkingHours(workingHours);
-        entity.setRestDay(restDay);
+        entity.setHoliday(holiday);
+
+        // Boolean fields
+        entity.setVentilationAvailable(ventilationAvailable);
+        entity.setLightingAvailable(lightingAvailable);
+        entity.setHeatingCoolingAvailable(heatingCoolingAvailable);
+        entity.setFoodStorageAvailable(foodStorageAvailable);
+        entity.setCleanlinessWasteAvailable(cleanlinessWasteAvailable);
+        entity.setDeadAnimalDisposalAvailable(deadAnimalDisposalAvailable);
+        entity.setVeterinarySupportAvailable(veterinarySupportAvailable);
+        // Description fields
         entity.setVentilationArrangement(ventilationArrangement);
         entity.setLightingArrangement(lightingArrangement);
         entity.setHeatingCoolingArrangement(heatingCoolingArrangement);
@@ -54,6 +75,7 @@ public class DogBreederFacilityDto extends AbstractDto {
         entity.setCleanlinessWasteArrangement(cleanlinessWasteArrangement);
         entity.setDeadAnimalDisposalArrangement(deadAnimalDisposalArrangement);
         entity.setVeterinarySupportArrangement(veterinarySupportArrangement);
+
         entity.setCageEnclosureDetails(cageEnclosureDetails);
 
         return entity;
