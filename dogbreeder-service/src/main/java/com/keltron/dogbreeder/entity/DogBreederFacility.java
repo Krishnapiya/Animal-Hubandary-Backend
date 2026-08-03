@@ -46,15 +46,35 @@ public class DogBreederFacility extends AbstractEntity {
     @Column(name = "working_hours", length = 500)
     private String workingHours;
 
-    @Column(name = "rest_day", length = 120)
-    private String restDay;
+    @Column(name = "holiday", length = 120)
+    private String holiday;
+    
+    @Column(name = "ventilation_available")
+    private Boolean ventilationAvailable;
 
+    @Column(name = "lighting_available")
+    private Boolean lightingAvailable;
+
+    @Column(name = "heating_cooling_available")
+    private Boolean heatingCoolingAvailable;
+
+    @Column(name = "food_storage_available")
+    private Boolean foodStorageAvailable;
+
+    @Column(name = "cleanliness_waste_available")
+    private Boolean cleanlinessWasteAvailable;
+
+    @Column(name = "dead_animal_disposal_available")
+    private Boolean deadAnimalDisposalAvailable;
+
+    @Column(name = "veterinary_support_available")
+    private Boolean veterinarySupportAvailable;
+    
     @Column(name = "ventilation_arrangement")
     private String ventilationArrangement;
 
     @Column(name = "lighting_arrangement")
     private String lightingArrangement;
-
     @Column(name = "heating_cooling_arrangement")
     private String heatingCoolingArrangement;
 
@@ -91,7 +111,16 @@ public class DogBreederFacility extends AbstractEntity {
                 facilityDto.getAccommodationInfrastructure();
 
         this.workingHours = facilityDto.getWorkingHours();
-        this.restDay = facilityDto.getRestDay();
+        this.holiday = facilityDto.getHoliday();        
+        
+        this.ventilationAvailable = facilityDto.getVentilationAvailable();
+        this.lightingAvailable = facilityDto.getLightingAvailable();
+        this.heatingCoolingAvailable = facilityDto.getHeatingCoolingAvailable();
+        this.foodStorageAvailable = facilityDto.getFoodStorageAvailable();
+        this.cleanlinessWasteAvailable = facilityDto.getCleanlinessWasteAvailable();
+        this.deadAnimalDisposalAvailable = facilityDto.getDeadAnimalDisposalAvailable();
+        this.veterinarySupportAvailable = facilityDto.getVeterinarySupportAvailable();
+        
         this.ventilationArrangement = facilityDto.getVentilationArrangement();
         this.lightingArrangement = facilityDto.getLightingArrangement();
         this.heatingCoolingArrangement =
@@ -106,7 +135,8 @@ public class DogBreederFacility extends AbstractEntity {
         this.cageEnclosureDetails = facilityDto.getCageEnclosureDetails();
     }
 
-    @Override
+    @SuppressWarnings("unchecked")
+	@Override
     public DogBreederFacilityDto toDTO() {
 
         DogBreederFacilityDto dto = new DogBreederFacilityDto();
@@ -119,7 +149,15 @@ public class DogBreederFacility extends AbstractEntity {
 
         dto.setAccommodationInfrastructure(accommodationInfrastructure);
         dto.setWorkingHours(workingHours);
-        dto.setRestDay(restDay);
+        dto.setHoliday(holiday);        
+        dto.setVentilationAvailable(ventilationAvailable);
+        dto.setLightingAvailable(lightingAvailable);
+        dto.setHeatingCoolingAvailable(heatingCoolingAvailable);
+        dto.setFoodStorageAvailable(foodStorageAvailable);
+        dto.setCleanlinessWasteAvailable(cleanlinessWasteAvailable);
+        dto.setDeadAnimalDisposalAvailable(deadAnimalDisposalAvailable);
+        dto.setVeterinarySupportAvailable(veterinarySupportAvailable);
+        
         dto.setVentilationArrangement(ventilationArrangement);
         dto.setLightingArrangement(lightingArrangement);
         dto.setHeatingCoolingArrangement(heatingCoolingArrangement);
