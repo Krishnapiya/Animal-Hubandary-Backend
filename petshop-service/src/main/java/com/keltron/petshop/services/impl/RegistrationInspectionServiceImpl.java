@@ -21,216 +21,193 @@ import java.nio.file.StandardCopyOption;
 import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.web.multipart.MultipartFile;
-
+import com.keltron.utility.constants.ApplicationStatus;
+import java.time.format.DateTimeFormatter;
 @Service
 @Transactional
 public class RegistrationInspectionServiceImpl {
 
-    @Autowired
-    private RegistrationInspectionRepository repository;
+	@Autowired
+	private RegistrationInspectionRepository repository;
 
-    @Autowired
-    private PetShopRegistrationApplicationRepository applicationRepository;
-    
-    @Autowired
-    private ApplicationStatusMasterRepository applicationStatusMasterRepository;
-    @Autowired
-    private PetShopNotificationServiceImpl notificationService;
-    @Value("${application.inspection.upload-dir}")
-    private String inspectionUploadDir;
+	@Autowired
+	private PetShopRegistrationApplicationRepository applicationRepository;
 
-    /**
-     * Save Inspection Schedule
-     */
-    public RegistrationInspection save(
-            RegistrationInspectionDto dto) {
+	@Autowired
+	private ApplicationStatusMasterRepository applicationStatusMasterRepository;
+	@Autowired
+	private PetShopNotificationServiceImpl notificationService;
 
-        RegistrationInspection inspection =
-                new RegistrationInspection();
+	@Autowired
+	private RegistrationApplicationStatusHistoryServiceImpl historyService;
 
-        inspection.copyFromDTO(dto);
+	@Value("${application.inspection.upload-dir}")
+	private String inspectionUploadDir;
 
-        PetShopRegistrationApplication application =
-                applicationRepository.findById(
-                        dto.getApplicationId())
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Application not found."));
+	/**
+	 * Save Inspection Schedule
+	 */
+	public RegistrationInspection save(RegistrationInspectionDto dto) {
 
-        inspection.setApplication(application);
+		RegistrationInspection inspection = new RegistrationInspection();
 
-        RegistrationInspection savedInspection =
-                repository.save(inspection);
+		inspection.copyFromDTO(dto);
 
-        ApplicationStatusMaster inspectionScheduled =
-                applicationStatusMasterRepository
-                        .findByStatusCode(
-                                "INSPECTION_SCHEDULED")
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Status INSPECTION_SCHEDULED not found."));
+		PetShopRegistrationApplication application = applicationRepository.findById(dto.getApplicationId())
+				.orElseThrow(() -> new RuntimeException("Application not found."));
 
-        application.setStatus(inspectionScheduled);
+		ApplicationStatus fromStatus = application.getStatus() == null ? null
+				: ApplicationStatus.valueOf(application.getStatus().getStatusCode());
 
-        applicationRepository.save(application);
+		inspection.setApplication(application);
 
-        notificationService.createNotification(
-                application.getApplicantUserId(),
-                "PET_SHOP",
-                application.getId(),
-                "Inspection Scheduled",
-                "Your inspection has been scheduled by the Chief Veterinary Officer.",
-                "INFO"
-        );
+		RegistrationInspection savedInspection = repository.save(inspection);
 
-        return savedInspection;
-    }
+		ApplicationStatusMaster inspectionScheduled = applicationStatusMasterRepository
+				.findByStatusCode(ApplicationStatus.INSPECTION_SCHEDULED.name())
+				.orElseThrow(() -> new RuntimeException("Status INSPECTION_SCHEDULED not found."));
 
-    /**
-     * Update Inspection
-     */
-    public RegistrationInspection update(
-            Long id,
-            RegistrationInspectionDto dto) {
+		application.setStatus(inspectionScheduled);
 
-        RegistrationInspection inspection =
-                repository.findById(id)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Inspection not found."));
+		applicationRepository.save(application);
+		historyService.logStatusChange(application.getId(), fromStatus, ApplicationStatus.INSPECTION_SCHEDULED,
+				"SYSTEM", "Inspection scheduled", "SCHEDULE_INSPECTION");
 
-        inspection.copyFromDTO(dto);
+		String inspectionDate =
+		        inspection.getInspectionDate()
+		                  .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
 
-        if (dto.getApplicationId() != null) {
+		String message =
+		        "Your inspection has been scheduled by the Chief Veterinary Officer.\n\n"
+		      + "Inspection Date : " + inspectionDate;
 
-            PetShopRegistrationApplication application =
-                    applicationRepository.findById(
-                            dto.getApplicationId())
-                            .orElseThrow(() ->
-                                    new RuntimeException(
-                                            "Application not found."));
+		if (inspection.getInspectionRemarks() != null
+		        && !inspection.getInspectionRemarks().isBlank()) {
 
-            inspection.setApplication(application);
-        }
+		    message += "\nRemarks : " + inspection.getInspectionRemarks();
+		}
 
-        return repository.save(inspection);
-    }
+		notificationService.createNotification(
+		        application.getApplicantUserId(),
+		        "PET_SHOP",
+		        application.getId(),
+		        "Inspection Scheduled",
+		        message,
+		        "INFO");
+		return savedInspection;
+	}
 
-    /**
-     * Get Inspection By Id
-     */
-    @Transactional(readOnly = true)
-    public RegistrationInspection get(
-            Long id) {
+	/**
+	 * Update Inspection
+	 */
+	public RegistrationInspection update(Long id, RegistrationInspectionDto dto) {
 
-        return repository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Inspection not found."));
-    }
+		RegistrationInspection inspection = repository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Inspection not found."));
 
-    /**
-     * Get Inspection By Application
-     */
-    @Transactional(readOnly = true)
-    public RegistrationInspection getByApplication(
-            Long applicationId) {
+		inspection.copyFromDTO(dto);
 
-        return repository.findByApplication_Id(
-                applicationId)
-                .orElse(null);
-    }
+		if (dto.getApplicationId() != null) {
 
-    /**
-     * List All Inspections
-     */
-    @Transactional(readOnly = true)
-    public List<RegistrationInspection> getAll() {
+			PetShopRegistrationApplication application = applicationRepository.findById(dto.getApplicationId())
+					.orElseThrow(() -> new RuntimeException("Application not found."));
 
-        return repository.findAllByOrderByIdDesc();
-    }
+			inspection.setApplication(application);
+		}
 
-    /**
-     * Delete Inspection
-     */
-    public boolean delete(
-            Long id) {
+		return repository.save(inspection);
+	}
 
-        RegistrationInspection inspection =
-                repository.findById(id)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Inspection not found."));
+	/**
+	 * Get Inspection By Id
+	 */
+	@Transactional(readOnly = true)
+	public RegistrationInspection get(Long id) {
 
-        repository.delete(inspection);
+		return repository.findById(id).orElseThrow(() -> new RuntimeException("Inspection not found."));
+	}
 
-        return true;
-    }
-    public RegistrationInspection uploadInspectionReport(
-            Long applicationId,
-            MultipartFile reportFile,
-            String remarks,
-            String recommendation) {
+	/**
+	 * Get Inspection By Application
+	 */
+	@Transactional(readOnly = true)
+	public RegistrationInspection getByApplication(Long applicationId) {
 
-    	RegistrationInspection inspection =
-    	        repository.findByApplication_Id(applicationId)
-    	                .orElseThrow(() ->
-    	                        new RuntimeException(
-    	                                "Inspection not found."));
+		return repository.findByApplication_Id(applicationId).orElse(null);
+	}
 
-       
+	/**
+	 * List All Inspections
+	 */
+	@Transactional(readOnly = true)
+	public List<RegistrationInspection> getAll() {
 
-        try {
+		return repository.findAllByOrderByIdDesc();
+	}
 
-        	Path reportDirectory = Paths.get(inspectionUploadDir);
+	/**
+	 * Delete Inspection
+	 */
+	public boolean delete(Long id) {
 
-        	Files.createDirectories(reportDirectory);
+		RegistrationInspection inspection = repository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Inspection not found."));
 
-        	String fileName =
-        	        System.currentTimeMillis() + "_"
-        	                + reportFile.getOriginalFilename();
+		repository.delete(inspection);
 
-        	Path filePath = reportDirectory.resolve(fileName);
+		return true;
+	}
 
-            Files.copy(
-                    reportFile.getInputStream(),
-                    filePath,
-                    StandardCopyOption.REPLACE_EXISTING);
+	public RegistrationInspection uploadInspectionReport(Long applicationId, MultipartFile reportFile, String remarks,
+			String recommendation) {
 
-            inspection.setInspectionReport(filePath.toString());
+		RegistrationInspection inspection = repository.findByApplication_Id(applicationId)
+				.orElseThrow(() -> new RuntimeException("Inspection not found."));
 
-        } catch (IOException e) {
+		try {
 
-            throw new RuntimeException(
-                    "Failed to upload inspection report.",
-                    e);
-        }
+			Path reportDirectory = Paths.get(inspectionUploadDir);
 
-        inspection.setInspectionRemarks(remarks);
+			Files.createDirectories(reportDirectory);
 
-        inspection.setRecommendation(recommendation);
+			String fileName = System.currentTimeMillis() + "_" + reportFile.getOriginalFilename();
 
-        inspection.setStatus(recommendation);
+			Path filePath = reportDirectory.resolve(fileName);
 
-        PetShopRegistrationApplication application =
-                inspection.getApplication();
+			Files.copy(reportFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        String statusCode =
-                recommendation.equalsIgnoreCase("APPROVED")
-                ? "VERIFIED_BY_CVO"
-                        : "REJECTED_BY_CVO";
+			inspection.setInspectionReport(filePath.toString());
 
-        ApplicationStatusMaster applicationStatus =
-                applicationStatusMasterRepository
-                        .findByStatusCode(statusCode)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Status not found : " + statusCode));
+		} catch (IOException e) {
 
-        application.setStatus(applicationStatus);
+			throw new RuntimeException("Failed to upload inspection report.", e);
+		}
 
-        applicationRepository.save(application);
+		inspection.setInspectionRemarks(remarks);
 
-        return repository.save(inspection);
-    }
+		inspection.setRecommendation(recommendation);
+
+//        inspection.setStatus(recommendation);
+
+		PetShopRegistrationApplication application = inspection.getApplication();
+
+		ApplicationStatus fromStatus = application.getStatus() == null ? null
+				: ApplicationStatus.valueOf(application.getStatus().getStatusCode());
+
+		String statusCode = recommendation.equalsIgnoreCase("APPROVED") ? ApplicationStatus.VERIFIED_BY_CVO.name()
+				: ApplicationStatus.REJECTED_BY_CVO.name();
+
+		ApplicationStatusMaster applicationStatus = applicationStatusMasterRepository.findByStatusCode(statusCode)
+				.orElseThrow(() -> new RuntimeException("Status not found : " + statusCode));
+
+		application.setStatus(applicationStatus);
+
+		applicationRepository.save(application);
+		historyService.logStatusChange(application.getId(), fromStatus, ApplicationStatus.valueOf(statusCode), "SYSTEM",
+				recommendation.equalsIgnoreCase("APPROVED") ? "Application verified by CVO"
+						: "Application rejected by CVO",
+				recommendation.equalsIgnoreCase("APPROVED") ? "VERIFY" : "REJECT");
+
+		return repository.save(inspection);
+	}
 }

@@ -29,7 +29,7 @@ public class RegistrationInspectionDto extends AbstractDto {
 
     private String recommendation;
 
-    private String status;
+//    private String status;
 
  
 
@@ -80,7 +80,7 @@ public class RegistrationInspectionDto extends AbstractDto {
                 ", applicationId=" + applicationId +
                 ", inspectionDate=" + inspectionDate +
                 ", recommendation='" + recommendation + '\'' +
-                ", status='" + status + '\'' +
+//                ", status='" + status + '\'' +
                 '}';
     }
 }
