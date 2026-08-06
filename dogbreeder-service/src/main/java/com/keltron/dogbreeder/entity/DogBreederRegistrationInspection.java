@@ -27,7 +27,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 @Entity
-@Table(name = "registration_inspection", schema = "awb")
+@Table(name = "dogbreeder_registration_inspection", schema = "awb")
 public class DogBreederRegistrationInspection extends AbstractEntity {
 
     private static final long serialVersionUID = 1L;
@@ -52,8 +52,6 @@ public class DogBreederRegistrationInspection extends AbstractEntity {
     @Column(name = "recommendation")
     private String recommendation;
 
-    @Column(name = "status")
-    private String status;
 
     public DogBreederRegistrationInspection(Long id) {
         this.id = id;
@@ -79,7 +77,6 @@ public class DogBreederRegistrationInspection extends AbstractEntity {
         this.inspectionRemarks = inspectionDto.getInspectionRemarks();
         this.inspectionReport = inspectionDto.getInspectionReport();
         this.recommendation = inspectionDto.getRecommendation();
-        this.status = inspectionDto.getStatus();
     }
 
     @SuppressWarnings("unchecked")
@@ -99,7 +96,6 @@ public class DogBreederRegistrationInspection extends AbstractEntity {
         dto.setInspectionRemarks(inspectionRemarks);
         dto.setInspectionReport(inspectionReport);
         dto.setRecommendation(recommendation);
-        dto.setStatus(status);
 
         return dto;
     }

@@ -34,6 +34,7 @@ import com.keltron.utility.jpa.repository.UsersRepository;
 import com.keltron.utility.requests.Request;
 import com.keltron.utility.responses.AbstractResponse;
 import com.keltron.utility.web.controller.abs.AbstractController;
+import com.keltron.dogbreeder.dto.DogBreederRegistrationApplicationResubmissionDto;
 
 import jakarta.validation.Valid;
 
@@ -270,7 +271,56 @@ public class DogBreederRegistrationApplicationController
                 .build();
     }
     
+    @PostMapping("/approve/{id}")
+    @PreAuthorize(ADMIN_AUTHORITY)
+    public ResponseEntity<AbstractResponse> approveApplication(
+            @PathVariable("id") Long id) {
 
+        return new ResponseBuilder()
+                .withData(serviceImpl.approveApplication(id))
+                .build();
+    }
+
+    /**
+     * Final Rejection by Admin
+     */
+    @PostMapping("/reject/{id}")
+    @PreAuthorize(ADMIN_AUTHORITY)
+    public ResponseEntity<AbstractResponse> rejectApplication(
+            @PathVariable("id") Long id) {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.rejectApplication(id))
+                .build();
+    }
+    @PatchMapping("/resubmit")
+    public ResponseEntity<AbstractResponse> resubmitApplication(
+            @Valid
+            @RequestBody
+            Request<DogBreederRegistrationApplicationResubmissionDto> request) {
+
+        if (request == null || request.getPayLoad() == null) {
+            return new ResponseBuilder()
+                    .withError(
+                            HttpStatus.BAD_REQUEST,
+                            "Request payload is missing")
+                    .build();
+        }
+
+        if (!request.isValid()
+                || !request.getPayLoad().isValid(HttpMethod.PATCH)) {
+
+            return new ResponseBuilder()
+                    .withError(
+                            HttpStatus.BAD_REQUEST,
+                            request.getPayLoad().getErrors())
+                    .build();
+        }
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.resubmitApplication(request.getPayLoad()))
+                .build();
+    }
     /**
      * Delete application — Admin only.
      */

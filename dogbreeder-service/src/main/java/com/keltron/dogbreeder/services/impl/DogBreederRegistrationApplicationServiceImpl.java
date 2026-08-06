@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.keltron.dogbreeder.dto.DogBreederRegistrationApplicationDto;
 import com.keltron.dogbreeder.entity.DogBreederRegistrationApplication;
@@ -22,6 +24,7 @@ import com.keltron.utility.jpa.entity.ApplicationStatusMaster;
 import com.keltron.utility.jpa.entity.Users;
 import com.keltron.utility.jpa.repository.UsersRepository;
 import com.keltron.utility.manage.service.abs.AbstractJpaService;
+import com.keltron.dogbreeder.dto.DogBreederRegistrationApplicationResubmissionDto;
 
 @Service
 public class DogBreederRegistrationApplicationServiceImpl
@@ -34,7 +37,12 @@ public class DogBreederRegistrationApplicationServiceImpl
     private static final String DOG_BREEDER_ENTITY_TYPE = "DOG_BREEDER";
 
     private static final String DRAFT_STATUS_CODE = "DRAFT";
+    private static final String SUBMITTED_STATUS_CODE = "SUBMITTED";
     private static final String FORWARDED_TO_CVO_STATUS_CODE = "FORWARDED_TO_CVO";
+    private static final String INSPECTION_SCHEDULED_STATUS_CODE = "INSPECTION_SCHEDULED";
+    private static final String VERIFIED_BY_CVO_STATUS_CODE = "VERIFIED_BY_CVO";
+    private static final String APPROVED_STATUS_CODE = "APPLICATION_APPROVED";
+    private static final String REJECTED_STATUS_CODE = "APPLICATION_REJECTED";
 
     @Autowired
     private DogBreederRegistrationApplicationRepository applicationRepository;
@@ -59,6 +67,9 @@ public class DogBreederRegistrationApplicationServiceImpl
 
     @Autowired
     private DogBreederApplicationStatusMasterRepository statusRepository;
+
+    @Autowired
+    private DogBreederNotificationServiceImpl notificationService;
 
     /**
      * Helper mapper method to populate breederName onto the DTO.
@@ -98,7 +109,7 @@ public class DogBreederRegistrationApplicationServiceImpl
                 .stream()
                 .map(this::mapToDto)
                 .toList();
-    } 
+    }
 
     /**
      * Returns the latest Dog Breeder application ID.
@@ -171,6 +182,42 @@ public class DogBreederRegistrationApplicationServiceImpl
     }
 
     /**
+     * Breeder submits draft application.
+     */
+    @Transactional
+    public DogBreederRegistrationApplicationDto submitApplication(Long applicationId) {
+
+        DogBreederRegistrationApplication application = getDogBreederApplication(applicationId);
+
+        if (application.getStatus() == null) {
+            throw new RuntimeException("Application status not found.");
+        }
+
+        if (!DRAFT_STATUS_CODE.equalsIgnoreCase(application.getStatus().getStatusCode())) {
+            throw new RuntimeException("Only Draft applications can be submitted.");
+        }
+
+        ApplicationStatusMaster submittedStatus =
+                statusRepository.findByStatusCode(SUBMITTED_STATUS_CODE)
+                        .orElseThrow(() -> new RuntimeException("SUBMITTED status not found"));
+
+        application.setStatus(submittedStatus);
+
+        DogBreederRegistrationApplication savedApp = applicationRepository.save(application);
+
+        // NOTIFICATION: Triggered on submission
+        notificationService.createNotification(
+                savedApp.getApplicantUserId(),
+                DOG_BREEDER_ENTITY_TYPE,
+                savedApp.getId(),
+                "Application Submitted",
+                "Your Dog Breeder Registration application (" + savedApp.getApplicationNumber() + ") has been submitted successfully.",
+                "INFO");
+
+        return mapToDto(savedApp);
+    }
+
+    /**
      * Admin forwards an application to CVO.
      */
     @Transactional
@@ -190,9 +237,80 @@ public class DogBreederRegistrationApplicationServiceImpl
         application.setStatus(forwardedStatus);
         application.setForwardedToCvoAt(LocalDateTime.now());
 
-        applicationRepository.save(application);
+        DogBreederRegistrationApplication savedApp = applicationRepository.save(application);
+
+        // NOTIFICATION: Triggered when admin forwards to CVO
+        notificationService.createNotification(
+                savedApp.getApplicantUserId(),
+                DOG_BREEDER_ENTITY_TYPE,
+                savedApp.getId(),
+                "Application Forwarded to CVO",
+                "Your application (" + savedApp.getApplicationNumber() + ") has been forwarded to the District CVO for inspection.",
+                "INFO");
 
         return "Application forwarded to CVO successfully";
+    }
+
+    /**
+     * CVO Schedules Inspection.
+     */
+    /**
+     * CVO Schedules Inspection.
+     */
+    /**
+     * CVO Schedules Inspection.
+     */
+    /**
+     * CVO Schedules Inspection.
+     */
+    @Transactional
+    public DogBreederRegistrationApplicationDto scheduleInspection(Long applicationId) {
+
+        DogBreederRegistrationApplication application = getDogBreederApplication(applicationId);
+
+        // 1. Set application status to INSPECTION_SCHEDULED
+        ApplicationStatusMaster status = statusRepository.findByStatusCode(INSPECTION_SCHEDULED_STATUS_CODE)
+                .orElseThrow(() -> new RuntimeException("INSPECTION_SCHEDULED status not found"));
+
+        application.setStatus(status);
+        DogBreederRegistrationApplication savedApp = applicationRepository.save(application);
+
+        // 2. Trigger notification with Title = "Inspection Scheduled"
+        notificationService.createNotification(
+                savedApp.getApplicantUserId(),
+                DOG_BREEDER_ENTITY_TYPE,
+                savedApp.getId(),
+                "Inspection Scheduled", // Heading shown at top of card
+                "Your inspection has been scheduled by the Chief Veterinary Officer.",
+                "INFO"
+        );
+
+        return mapToDto(savedApp);
+    }
+    /**
+     * CVO Verifies Application / Uploads Report.
+     */
+    @Transactional
+    public DogBreederRegistrationApplicationDto verifyByCvo(Long applicationId) {
+
+        DogBreederRegistrationApplication application = getDogBreederApplication(applicationId);
+
+        ApplicationStatusMaster status = statusRepository.findByStatusCode(VERIFIED_BY_CVO_STATUS_CODE)
+                .orElseThrow(() -> new RuntimeException("VERIFIED_BY_CVO status not found"));
+
+        application.setStatus(status);
+        DogBreederRegistrationApplication savedApp = applicationRepository.save(application);
+
+        // NOTIFICATION: Triggered when CVO completes inspection/verification
+        notificationService.createNotification(
+                savedApp.getApplicantUserId(),
+                DOG_BREEDER_ENTITY_TYPE,
+                savedApp.getId(),
+                "Application Verified by CVO",
+                "Your Dog Breeder Registration application (" + savedApp.getApplicationNumber() + ") inspection report has been verified by CVO.",
+                "SUCCESS");
+
+        return mapToDto(savedApp);
     }
 
     /**
@@ -206,12 +324,98 @@ public class DogBreederRegistrationApplicationServiceImpl
         }
 
         List<DogBreederRegistrationApplication> applications =
-        		applicationRepository.findCvoApplications(
-        		        DOG_BREEDER_ENTITY_TYPE,
-        		        districtId);
+                applicationRepository.findCvoApplications(
+                        DOG_BREEDER_ENTITY_TYPE,
+                        districtId);
 
         return applications
                 .stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+
+    /**
+     * Admin approves final registration.
+     */
+    @Transactional
+    public DogBreederRegistrationApplicationDto approveApplication(Long id) {
+
+        DogBreederRegistrationApplication application =
+                getDogBreederApplication(id);
+
+        application.setStatus(
+                statusRepository.findByStatusCode(APPROVED_STATUS_CODE)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Status APPLICATION_APPROVED not found")));
+
+        DogBreederRegistrationApplication savedApp = applicationRepository.save(application);
+
+        // NOTIFICATION: Triggered when Admin approves application
+        notificationService.createNotification(
+                savedApp.getApplicantUserId(),
+                DOG_BREEDER_ENTITY_TYPE,
+                savedApp.getId(),
+                "Application Approved",
+                "Congratulations! Your Dog Breeder registration application (" + savedApp.getApplicationNumber() + ") has been approved.",
+                "SUCCESS");
+
+        return mapToDto(savedApp);
+    }
+
+    /**
+     * Admin rejects application.
+     */
+    @Transactional
+    public DogBreederRegistrationApplicationDto rejectApplication(Long id) {
+
+        DogBreederRegistrationApplication application =
+                getDogBreederApplication(id);
+
+        application.setStatus(
+                statusRepository.findByStatusCode(REJECTED_STATUS_CODE)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Status APPLICATION_REJECTED not found")));
+
+        DogBreederRegistrationApplication savedApp = applicationRepository.save(application);
+
+        // NOTIFICATION: Triggered when Admin rejects application
+        notificationService.createNotification(
+                savedApp.getApplicantUserId(),
+                DOG_BREEDER_ENTITY_TYPE,
+                savedApp.getId(),
+                "Application Rejected",
+                "Your Dog Breeder registration application (" + savedApp.getApplicationNumber() + ") has been rejected.",
+                "ERROR");
+
+        return mapToDto(savedApp);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DogBreederRegistrationApplicationDto> getMyApplications(String username) {
+
+        Users user = usersRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        boolean isAdmin = user.getRole() != null
+                && "ADMIN".equalsIgnoreCase(user.getRole().getRoleName());
+
+        List<DogBreederRegistrationApplication> applications;
+
+        if (isAdmin) {
+            applications = applicationRepository
+                    .findByEntityTypeOrderByIdDesc(DOG_BREEDER_ENTITY_TYPE);
+        } else {
+            applications = applicationRepository
+                    .findByApplicantUserIdAndEntityTypeOrderByIdDesc(
+                            user.getId(),
+                            DOG_BREEDER_ENTITY_TYPE);
+        }
+
+        return applications.stream()
                 .map(this::mapToDto)
                 .toList();
     }
@@ -236,57 +440,24 @@ public class DogBreederRegistrationApplicationServiceImpl
 
         return application;
     }
-
     @Transactional
-    public DogBreederRegistrationApplicationDto submitApplication(Long applicationId) {
+    public DogBreederRegistrationApplicationDto resubmitApplication(
+            DogBreederRegistrationApplicationResubmissionDto dto) {
 
-        DogBreederRegistrationApplication application = getDogBreederApplication(applicationId);
+        DogBreederRegistrationApplication application =
+                applicationRepository.findById(dto.getApplicationId())
+                        .orElseThrow(() -> new RuntimeException("Application not found"));
 
-        if (application.getStatus() == null) {
-            throw new RuntimeException("Application status not found.");
-        }
+        ApplicationStatusMaster status = statusRepository
+                .findByStatusCode("RESUBMITTED")
+                .orElseThrow(() -> new RuntimeException("RESUBMITTED status not found"));
 
-        if (!DRAFT_STATUS_CODE.equalsIgnoreCase(application.getStatus().getStatusCode())) {
-            throw new RuntimeException("Only Draft applications can be submitted.");
-        }
+        application.setStatus(status);
+        application.setSubmittedAt(LocalDateTime.now());
 
-        ApplicationStatusMaster submittedStatus =
-                statusRepository.findByStatusCode("SUBMITTED")
-                        .orElseThrow(() -> new RuntimeException("SUBMITTED status not found"));
+        DogBreederRegistrationApplication saved =
+                applicationRepository.save(application);
 
-        application.setStatus(submittedStatus);
-
-        applicationRepository.save(application);
-
-        return mapToDto(application);
+        return mapToDto(saved);
     }
-
-    @Transactional(readOnly = true)
-    public List<DogBreederRegistrationApplicationDto> getMyApplications(String username) {
-
-        Users user = usersRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        boolean isAdmin = user.getRole() != null
-                && "ADMIN".equalsIgnoreCase(user.getRole().getRoleName());
-
-        List<DogBreederRegistrationApplication> applications;
-
-        if (isAdmin) {
-            applications = applicationRepository
-                    .findByEntityTypeOrderByIdDesc(DOG_BREEDER_ENTITY_TYPE);
-        } else {
-            applications = applicationRepository
-                    .findByApplicantUserIdAndEntityTypeOrderByIdDesc(
-                            user.getId(),
-                            DOG_BREEDER_ENTITY_TYPE);
-        }
-
-        // Mapping using mapToDto instead of application.toDTO()
-        return applications.stream()
-                .map(this::mapToDto)
-                .toList();
-    }
-    
-
 }
