@@ -50,7 +50,8 @@ public class SecurityConfig {
                 .securityMatcher(
                         "/auth/login",
                         "/auth/register",
-                        "/auth/register-pet-shop-owner")
+                        "/auth/register-pet-shop-owner",
+                        "/auth/register-citizen")
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .sessionManagement(session -> session

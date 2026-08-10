@@ -47,7 +47,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.crypto.spec.SecretKeySpec;
-
+import com.example.springSecurity.dto.CitizenRegisterDto;
+import com.example.springSecurity.service.CitizenRegistrationService;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/auth")
@@ -67,6 +68,7 @@ public class AppUserController {
     
     private final ChangePasswordService changePasswordService;
     private final PetShopOwnerRegistrationService petShopOwnerRegistrationService;
+    private final CitizenRegistrationService citizenRegistrationService;
  
 //    @PostMapping("/register")
 //	public ResponseEntity<Object> register(
@@ -115,6 +117,41 @@ public class AppUserController {
         var response = new HashMap<String, Object>();
         response.put("token", jwtToken);
         response.put("user", savedUser.toDTO());
+        return ResponseEntity.ok(response);
+    }
+    @PostMapping("/register-citizen")
+    public ResponseEntity<Object> registerCitizen(
+            @RequestBody CitizenRegisterDto registerDto) {
+
+        var validationErrors = citizenRegistrationService.validate(registerDto);
+
+        if (!validationErrors.isEmpty()) {
+            return ResponseEntity.badRequest().body(validationErrors);
+        }
+
+        Users savedUser;
+
+        try {
+            savedUser = citizenRegistrationService.register(registerDto);
+
+        } catch (IllegalStateException ex) {
+
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of("detail", ex.getMessage()));
+        }
+
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        registerDto.getUsername(),
+                        registerDto.getPassword()));
+
+        String jwtToken = createJwtToken(savedUser);
+
+        var response = new HashMap<String, Object>();
+
+        response.put("token", jwtToken);
+        response.put("user", savedUser.toDTO());
+
         return ResponseEntity.ok(response);
     }
 
