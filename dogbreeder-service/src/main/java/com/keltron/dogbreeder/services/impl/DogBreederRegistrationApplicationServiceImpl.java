@@ -128,59 +128,91 @@ public class DogBreederRegistrationApplicationServiceImpl
     @Transactional(readOnly = true)
     public Map<String, Object> getPreview(Long applicationId) {
 
-        DogBreederRegistrationApplication application = getDogBreederApplication(applicationId);
+        DogBreederRegistrationApplication application =
+                getDogBreederApplication(applicationId);
 
         Map<String, Object> response = new HashMap<>();
 
-        response.put("registrationDetails", mapToDto(application));
+        // Main application / registration details
+        response.put(
+                "registrationDetails",
+                mapToDto(application)
+        );
 
-        var breederDetail = detailRepository
-                .findByApplicationId(applicationId)
-                .orElse(null);
+        // Breeder details
+        var breederDetail =
+                detailRepository
+                        .findByApplicationId(applicationId)
+                        .orElse(null);
 
-        response.put("breederDetails", breederDetail != null ? breederDetail.toDTO() : null);
+        response.put(
+                "breederDetails",
+                breederDetail != null
+                        ? breederDetail.toDTO()
+                        : null
+        );
 
         if (breederDetail != null) {
-            Long dogBreederDetailId = breederDetail.getId();
 
+            Long dogBreederDetailId =
+                    breederDetail.getId();
+
+            // Facility details
             response.put(
                     "facilityDetails",
                     facilityRepository
-                            .findByDogBreederDetail_Id(dogBreederDetailId)
+                            .findByDogBreederDetail_Id(
+                                    dogBreederDetailId
+                            )
                             .map(facility -> facility.toDTO())
-                            .orElse(null));
+                            .orElse(null)
+            );
 
+            // Declaration details
             response.put(
                     "declarationDetails",
                     declarationRepository
-                            .findByDogBreederDetail_Id(dogBreederDetailId)
+                            .findByDogBreederDetail_Id(
+                                    dogBreederDetailId
+                            )
                             .map(declaration -> declaration.toDTO())
-                            .orElse(null));
+                            .orElse(null)
+            );
 
+            // Breed details
             response.put(
                     "breedDetails",
                     breedRepository
-                            .findByDogBreederDetail_Id(dogBreederDetailId)
+                            .findByDogBreederDetail_Id(
+                                    dogBreederDetailId
+                            )
                             .stream()
                             .map(breed -> breed.toDTO())
-                            .toList());
+                            .toList()
+            );
+
         } else {
+
             response.put("facilityDetails", null);
             response.put("declarationDetails", null);
             response.put("breedDetails", List.of());
         }
 
-        response.put(
-                "documentDetails",
+        // Uploaded documents
+        List<?> documents =
                 documentRepository
                         .findByApplication_IdOrderByIdAsc(applicationId)
                         .stream()
                         .map(document -> document.toDTO())
-                        .toList());
+                        .toList();
+
+        response.put("documentDetails", documents);
+
+        // Alias used by frontend preview
+        response.put("supportingDocuments", documents);
 
         return response;
     }
-
     /**
      * Breeder submits draft application.
      */

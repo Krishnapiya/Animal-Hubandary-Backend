@@ -1,6 +1,8 @@
 package com.keltron.dogbreeder.controller;
 
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -151,9 +153,17 @@ public class DogBreederRegistrationApplicationController
                 .build();
     }
     @GetMapping("/download/{applicationId}")
-    public ResponseEntity<byte[]> download(@PathVariable Long applicationId) {
+    @PreAuthorize(ADMIN_OR_CVO_AUTHORITY)
+    public ResponseEntity<byte[]> download(
+            @PathVariable Long applicationId) {
 
-        byte[] zipBytes = pdfService.generateApplicationZip(applicationId);
+        Map<String, Object> applicationData =
+                serviceImpl.getPreview(applicationId);
+
+        byte[] zipBytes =
+                pdfService.generateApplicationZip(
+                        applicationId,
+                        applicationData);
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/zip"))
