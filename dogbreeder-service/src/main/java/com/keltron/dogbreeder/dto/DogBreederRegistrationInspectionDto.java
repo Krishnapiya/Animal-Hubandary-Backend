@@ -32,7 +32,7 @@ public class DogBreederRegistrationInspectionDto extends AbstractDto {
 
     private String recommendation;
 
-    private String status;
+   
 
     @SuppressWarnings("unchecked")
 	@Override
@@ -83,7 +83,6 @@ public class DogBreederRegistrationInspectionDto extends AbstractDto {
                 ", inspectionRemarks='" + inspectionRemarks + '\'' +
                 ", inspectionReport='" + inspectionReport + '\'' +
                 ", recommendation='" + recommendation + '\'' +
-                ", status='" + status + '\'' +
                 '}';
     }
 }

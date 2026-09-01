@@ -17,21 +17,30 @@ import com.keltron.utility.requests.ExcelExportRequest;
 
 @Service
 public class DogBreederBreedServiceImpl
-        extends AbstractJpaService<DogBreederBreedDto, Long, DogBreederBreedRepository, DogBreederBreed> {
+        extends AbstractJpaService<
+                DogBreederBreedDto,
+                Long,
+                DogBreederBreedRepository,
+                DogBreederBreed> {
 
     @Autowired
     private DogBreederBreedRepository dogBreederBreedRepository;
 
     @Transactional(readOnly = true)
-    public ByteArrayOutputStream generateExcel(ExcelExportRequest request) {
+    public ByteArrayOutputStream generateExcel(
+            ExcelExportRequest request) {
 
-        List<DogBreederBreed> breeds = dogBreederBreedRepository.findAll();
+        List<DogBreederBreed> breeds =
+                dogBreederBreedRepository.findAll();
 
         List<DogBreederBreedDto> dtos = breeds.stream()
                 .map(DogBreederBreed::toDTO)
                 .toList();
 
-        return ExcelExportUtil.generateExcel(dtos, request.getXls_config());
+        return ExcelExportUtil.generateExcel(
+                dtos,
+                request.getXls_config()
+        );
     }
 
     @Override
@@ -42,9 +51,15 @@ public class DogBreederBreedServiceImpl
 
         if (dto.getDogBreederDetail() != null
                 && dto.getDogBreederDetail().getId() != null) {
-            dogBreederDetailId = dto.getDogBreederDetail().getId();
+
+            dogBreederDetailId =
+                    dto.getDogBreederDetail().getId();
         }
 
+        /*
+         * Check whether the same breed already exists
+         * for this breeder detail.
+         */
         if (dogBreederDetailId != null
                 && dto.getBreedName() != null
                 && !dto.getBreedName().isBlank()) {
@@ -58,8 +73,15 @@ public class DogBreederBreedServiceImpl
                             .orElse(null);
 
             if (existingBreed != null) {
-                updateEditableFields(existingBreed, dto);
-                return dogBreederBreedRepository.save(existingBreed);
+
+                updateEditableFields(
+                        existingBreed,
+                        dto
+                );
+
+                return dogBreederBreedRepository.save(
+                        existingBreed
+                );
             }
         }
 
@@ -68,23 +90,48 @@ public class DogBreederBreedServiceImpl
 
     @Override
     @WriteTransactional
-    public DogBreederBreed update(Long id, DogBreederBreedDto dto) {
+    public DogBreederBreed update(
+            Long id,
+            DogBreederBreedDto dto) {
 
         DogBreederBreed existingBreed =
-                dogBreederBreedRepository.findById(id).orElse(null);
+                dogBreederBreedRepository
+                        .findById(id)
+                        .orElse(null);
 
         if (existingBreed != null) {
-            updateEditableFields(existingBreed, dto);
-            return dogBreederBreedRepository.save(existingBreed);
+
+            updateEditableFields(
+                    existingBreed,
+                    dto
+            );
+
+            return dogBreederBreedRepository.save(
+                    existingBreed
+            );
         }
 
         return super.update(id, dto);
     }
 
-    private void updateEditableFields(DogBreederBreed breed, DogBreederBreedDto dto) {
+    private void updateEditableFields(
+            DogBreederBreed breed,
+            DogBreederBreedDto dto) {
 
-        breed.setBreedName(dto.getBreedName());
-        breed.setDogCount(dto.getDogCount());
-        breed.setAgeDescription(dto.getAgeDescription());
+        breed.setBreedName(
+                dto.getBreedName()
+        );
+
+        breed.setDogCount(
+                dto.getDogCount()
+        );
+
+        breed.setAgeDescription(
+                dto.getAgeDescription()
+        );
+
+        breed.setGender(
+                dto.getGender()
+        );
     }
 }

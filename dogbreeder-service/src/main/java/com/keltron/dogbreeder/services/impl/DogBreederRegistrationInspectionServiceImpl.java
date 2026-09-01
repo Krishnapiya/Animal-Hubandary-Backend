@@ -34,6 +34,9 @@ public class DogBreederRegistrationInspectionServiceImpl {
     @Autowired
     private DogBreederApplicationStatusMasterRepository applicationStatusMasterRepository;
 
+    @Autowired
+    private DogBreederNotificationServiceImpl notificationService;
+
     @Value("${application.inspection.upload-dir}")
     private String inspectionUploadDir;
 
@@ -67,6 +70,18 @@ public class DogBreederRegistrationInspectionServiceImpl {
         application.setStatus(inspectionScheduled);
 
         applicationRepository.save(application);
+
+        // --- Trigger Notification to the Breeder ---
+        Long recipientUserId = getApplicantUserId(application);
+        if (recipientUserId != null) {
+            String inspectionDateDetails = dto.getInspectionDate() != null ? dto.getInspectionDate().toString() : null;
+            notificationService.triggerStatusNotification(
+                    application,
+                    "INSPECTION_SCHEDULED",
+                    recipientUserId,
+                    inspectionDateDetails
+            );
+        }
 
         return savedInspection;
     }
@@ -120,6 +135,7 @@ public class DogBreederRegistrationInspectionServiceImpl {
                 .orElseThrow(() ->
                         new RuntimeException("Inspection not found."));
     }
+
     /**
      * List All Inspections
      */
@@ -185,7 +201,7 @@ public class DogBreederRegistrationInspectionServiceImpl {
 
         inspection.setInspectionRemarks(remarks);
         inspection.setRecommendation(recommendation);
-        inspection.setStatus(recommendation);
+      
 
         DogBreederRegistrationApplication application =
                 inspection.getApplication();
@@ -206,6 +222,56 @@ public class DogBreederRegistrationInspectionServiceImpl {
 
         applicationRepository.save(application);
 
-        return repository.save(inspection);
+        DogBreederRegistrationInspection savedInspection = repository.save(inspection);
+
+        // --- Trigger Notification to the Breeder ---
+        Long recipientUserId = getApplicantUserId(application);
+        if (recipientUserId != null) {
+            notificationService.triggerStatusNotification(
+                    application,
+                    statusCode,
+                    recipientUserId
+            );
+        }
+
+        return savedInspection;
+    }
+
+    /**
+     * Helper to resolve applicant's user ID from the application entity
+     */
+    private Long getApplicantUserId(DogBreederRegistrationApplication application) {
+        if (application == null) {
+            return null;
+        }
+
+        // Check applicantUserId first
+        if (application.getApplicantUserId() != null) {
+            return parseToLong(application.getApplicantUserId());
+        }
+
+        // Fall back to createdBy
+        if (application.getCreatedBy() != null) {
+            return parseToLong(application.getCreatedBy());
+        }
+
+        return null;
+    }
+
+    /**
+     * Safe conversion helper from String/Object to Long
+     */
+    private Long parseToLong(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        if (obj instanceof Long l) {
+            return l;
+        }
+        try {
+            return Long.parseLong(obj.toString().trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

@@ -27,29 +27,84 @@ public class DogBreederBreedDto extends AbstractDto {
 
     private String ageDescription;
 
+    private String gender;
+
+    /**
+     * Convert DTO to Entity
+     */
     @SuppressWarnings("unchecked")
     @Override
     public DogBreederBreed toEntity() {
 
         DogBreederBreed entity = new DogBreederBreed();
 
-        entity.setId(id);
-        entity.setBreedName(breedName);
+        /*
+         * ID
+         */
+        if (id != null) {
+            entity.setId(id);
+        }
 
+        /*
+         * Breed name
+         */
+        if (breedName != null) {
+            entity.setBreedName(
+                    breedName.trim()
+            );
+        }
+
+        /*
+         * Dog count
+         */
         if (dogCount != null) {
             entity.setDogCount(dogCount);
         } else {
             entity.setDogCount(0);
         }
 
-        if (dogBreederDetail != null && dogBreederDetail.getId() != null) {
-            entity.setDogBreederDetail(new DogBreederDetail(dogBreederDetail.getId()));
+        /*
+         * Dog breeder detail
+         */
+        if (dogBreederDetail != null
+                && dogBreederDetail.getId() != null) {
+
+            entity.setDogBreederDetail(
+                    new DogBreederDetail(
+                            dogBreederDetail.getId()
+                    )
+            );
         }
-        entity.setAgeDescription(ageDescription);
+
+        /*
+         * Age description
+         */
+        if (ageDescription != null) {
+            entity.setAgeDescription(
+                    ageDescription.trim()
+            );
+        } else {
+            entity.setAgeDescription(null);
+        }
+
+        /*
+         * IMPORTANT:
+         * Save gender to entity
+         */
+        if (gender != null) {
+            entity.setGender(
+                    gender.trim().toUpperCase()
+            );
+        } else {
+            entity.setGender(null);
+        }
 
         return entity;
     }
 
+    /**
+     * Validate DTO
+     */
     @Override
     public boolean isValid(HttpMethod httpMethod) {
 
@@ -57,43 +112,166 @@ public class DogBreederBreedDto extends AbstractDto {
             return false;
         }
 
+        /*
+         * ============================================================
+         * POST
+         * ============================================================
+         */
         if (httpMethod.equals(HttpMethod.POST)) {
 
-            if (dogBreederDetail == null || dogBreederDetail.getId() == null) {
-                addError("dog_breeder_detail_id", dogBreederDetail);
+            /*
+             * Dog breeder detail ID
+             */
+            if (dogBreederDetail == null
+                    || dogBreederDetail.getId() == null) {
+
+                addError(
+                        "dog_breeder_detail_id",
+                        dogBreederDetail
+                );
             }
 
+            /*
+             * Breed name
+             */
             if (!ValidationUtils.isValid(breedName)) {
-                addError("breed_name", breedName);
+
+                addError(
+                        "breed_name",
+                        breedName
+                );
             }
 
+            /*
+             * Gender
+             */
+            if (!ValidationUtils.isValid(gender)) {
+
+                addError(
+                        "gender",
+                        gender
+                );
+
+            } else {
+
+                String normalizedGender =
+                        gender.trim().toUpperCase();
+
+                if (!normalizedGender.equals("MALE")
+                        && !normalizedGender.equals("FEMALE")) {
+
+                    addError(
+                            "gender",
+                            gender
+                    );
+                }
+            }
+
+            /*
+             * Dog count
+             */
             if (dogCount == null) {
-                addError("dog_count", dogCount);
+
+                addError(
+                        "dog_count",
+                        dogCount
+                );
+
             } else if (dogCount < 0) {
-                addError("dog_count", dogCount);
-            }
 
-        } else if (httpMethod.equals(HttpMethod.PATCH)) {
-
-            if (!ValidationUtils.isValid(id)) {
-                addError("id", id);
-            }
-
-            if (dogBreederDetail == null || dogBreederDetail.getId() == null) {
-                addError("dog_breeder_detail_id", dogBreederDetail);
-            }
-
-            if (!ValidationUtils.isValid(breedName)) {
-                addError("breed_name", breedName);
-            }
-
-            if (dogCount == null) {
-                addError("dog_count", dogCount);
-            } else if (dogCount < 0) {
-                addError("dog_count", dogCount);
+                addError(
+                        "dog_count",
+                        dogCount
+                );
             }
         }
 
-        return getErrors() == null || getErrors().isEmpty();
+        /*
+         * ============================================================
+         * PATCH
+         * ============================================================
+         */
+        else if (httpMethod.equals(HttpMethod.PATCH)) {
+
+            /*
+             * ID
+             */
+            if (!ValidationUtils.isValid(id)) {
+
+                addError(
+                        "id",
+                        id
+                );
+            }
+
+            /*
+             * Dog breeder detail ID
+             */
+            if (dogBreederDetail == null
+                    || dogBreederDetail.getId() == null) {
+
+                addError(
+                        "dog_breeder_detail_id",
+                        dogBreederDetail
+                );
+            }
+
+            /*
+             * Breed name
+             */
+            if (!ValidationUtils.isValid(breedName)) {
+
+                addError(
+                        "breed_name",
+                        breedName
+                );
+            }
+
+            /*
+             * Gender
+             */
+            if (!ValidationUtils.isValid(gender)) {
+
+                addError(
+                        "gender",
+                        gender
+                );
+
+            } else {
+
+                String normalizedGender =
+                        gender.trim().toUpperCase();
+
+                if (!normalizedGender.equals("MALE")
+                        && !normalizedGender.equals("FEMALE")) {
+
+                    addError(
+                            "gender",
+                            gender
+                    );
+                }
+            }
+
+            /*
+             * Dog count
+             */
+            if (dogCount == null) {
+
+                addError(
+                        "dog_count",
+                        dogCount
+                );
+
+            } else if (dogCount < 0) {
+
+                addError(
+                        "dog_count",
+                        dogCount
+                );
+            }
+        }
+
+        return getErrors() == null
+                || getErrors().isEmpty();
     }
 }
