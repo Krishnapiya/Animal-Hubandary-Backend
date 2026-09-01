@@ -7,10 +7,15 @@ import com.keltron.petshop.repository.PetShopApplicationDocumentRepository;
 import com.keltron.petshop.dto.PetShopApplicationDocumentDto;
 import com.keltron.petshop.entity.PetShopApplicationDocument;
 import java.util.List;
+import java.time.LocalDateTime;
+
+import com.keltron.petshop.dto.RegistrationApplicationResubmissionDto;
+import com.keltron.petshop.entity.RegistrationApplicationResubmission;
+import com.keltron.petshop.repository.RegistrationApplicationResubmissionRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
-
+import com.keltron.utility.constants.ApplicationStatus;
 import com.keltron.utility.jpa.entity.Users;
 import com.keltron.utility.jpa.repository.UsersRepository;
 import com.keltron.petshop.entity.ApplicationDeclaration;
@@ -64,6 +69,13 @@ public class PetShopRegistrationApplicationServiceImpl
     
     @Autowired
     private PetShopNotificationServiceImpl notificationService;
+    
+    @Autowired
+    private RegistrationApplicationStatusHistoryServiceImpl historyService;
+    
+    @Autowired
+    private RegistrationApplicationResubmissionRepository
+            resubmissionRepository;
     
     @Transactional(readOnly = true)
     public PetShopRegistrationViewDto getApplication(Long id) {
@@ -202,23 +214,34 @@ public class PetShopRegistrationApplicationServiceImpl
         return dto;
     }
     @Transactional(readOnly = true)
-    public List<PetShopRegistrationApplicationDto> getPetShopApplications() {
+    public List<PetShopRegistrationApplicationDto> getPetShopApplications(String status) {
 
-    	return repository
-    	        .findByEntityTypeAndStatus_StatusCodeInOrderByIdDesc(
-    	                "PET_SHOP",
-    	                List.of(
-    	                        "SUBMITTED",
-    	                        "FORWARDED_TO_CVO",
-    	                        "INSPECTION_SCHEDULED",
-    	                        "VERIFIED_BY_CVO",
-    	                        "REJECTED_BY_CVO",
-    	                        "APPLICATION_APPROVED",
-    	                        "APPLICATION_REJECTED"
-    	                ))
-    	        .stream()
-    	        .map(PetShopRegistrationApplication::toDTO)
-    	        .toList();
+        List<PetShopRegistrationApplication> applications =
+                repository.findByEntityTypeAndStatus_StatusCodeInOrderByIdDesc(
+                        "PET_SHOP",
+                        List.of(
+                                ApplicationStatus.SUBMITTED.name(),
+                                ApplicationStatus.RESUBMITTED.name(),
+                                ApplicationStatus.FORWARDED_TO_CVO.name(),
+                                ApplicationStatus.INSPECTION_SCHEDULED.name(),
+                                ApplicationStatus.VERIFIED_BY_CVO.name(),
+                                ApplicationStatus.REJECTED_BY_CVO.name(),
+                                ApplicationStatus.APPLICATION_APPROVED.name(),
+                                ApplicationStatus.APPLICATION_REJECTED.name()
+                        ));
+
+        if (status != null && !status.isBlank()) {
+            applications = applications.stream()
+                    .filter(a ->
+                            a.getStatus() != null &&
+                            status.equalsIgnoreCase(
+                                    a.getStatus().getStatusCode()))
+                    .toList();
+        }
+
+        return applications.stream()
+                .map(PetShopRegistrationApplication::toDTO)
+                .toList();
     }
     @Transactional
     public PetShopRegistrationApplicationDto forwardApplication(Long id) {
@@ -229,9 +252,15 @@ public class PetShopRegistrationApplicationServiceImpl
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Application not found"));
+        
+        ApplicationStatus fromStatus = application.getStatus() == null
+                ? null
+                : ApplicationStatus.valueOf(
+                        application.getStatus().getStatusCode());
 
         application.setStatus(
-                statusRepository.findByStatusCode("FORWARDED_TO_CVO")
+        		statusRepository.findByStatusCode(
+        		        ApplicationStatus.FORWARDED_TO_CVO.name())
                         .orElseThrow(() ->
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
@@ -246,16 +275,28 @@ public class PetShopRegistrationApplicationServiceImpl
         System.out.println("Office ID = " + office.getId());
 
         application.setCvOfficeId(Long.valueOf(office.getId()));
+        
+        
 
         System.out.println("cvOfficeId after set = " + application.getCvOfficeId());
 
         repository.save(application);
+        
 
         System.out.println("Saved successfully");
 
         application.setCvOfficeId(Long.valueOf(office.getId()));
+        
+     
 
         repository.save(application);
+        historyService.logStatusChange(
+                application.getId(),
+                fromStatus,
+                ApplicationStatus.FORWARDED_TO_CVO,
+                "SYSTEM",
+                "Application forwarded to CVO",
+                "FORWARD");
 
         notificationService.createNotification(
                 application.getApplicantUserId(),
@@ -269,7 +310,7 @@ public class PetShopRegistrationApplicationServiceImpl
     }
     
     @Transactional(readOnly = true)
-    public List<PetShopRegistrationApplicationDto> getMyApplications() {
+    public List<PetShopRegistrationApplicationDto> getMyApplications(String status) {
 
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
@@ -284,17 +325,27 @@ public class PetShopRegistrationApplicationServiceImpl
                                 HttpStatus.NOT_FOUND,
                                 "User not found"));
 
-        return repository
-                .findByApplicantUserIdOrderByIdDesc(user.getId())
-                .stream()
+        List<PetShopRegistrationApplication> applications =
+                repository.findByApplicantUserIdOrderByIdDesc(user.getId());
+
+        if (status != null && !status.isBlank()) {
+            applications = applications.stream()
+                    .filter(a ->
+                            a.getStatus() != null &&
+                            status.equalsIgnoreCase(
+                                    a.getStatus().getStatusCode()))
+                    .toList();
+        }
+
+        return applications.stream()
                 .map(application -> {
 
-                    PetShopRegistrationApplicationDto dto = application.toDTO();
+                    PetShopRegistrationApplicationDto dto =
+                            application.toDTO();
 
                     detailRepository.findByApplicationId(application.getId())
-                            .ifPresent(detail -> {
-                                dto.setShopName(detail.getShopName());
-                            });
+                            .ifPresent(detail ->
+                                    dto.setShopName(detail.getShopName()));
 
                     return dto;
                 })
@@ -309,15 +360,28 @@ public class PetShopRegistrationApplicationServiceImpl
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Application not found"));
+        
+        ApplicationStatus fromStatus = application.getStatus() == null
+                ? null
+                : ApplicationStatus.valueOf(
+                        application.getStatus().getStatusCode());
 
         application.setStatus(
-                statusRepository.findByStatusCode("SUBMITTED")
+        		statusRepository.findByStatusCode(
+        		        ApplicationStatus.SUBMITTED.name())
                         .orElseThrow(() ->
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Status SUBMITTED not found")));
 
         repository.save(application);
+        historyService.logStatusChange(
+                application.getId(),
+                fromStatus,
+                ApplicationStatus.SUBMITTED,
+                "SYSTEM",
+                "Application submitted",
+                "SUBMIT");
 
         notificationService.createNotification(
                 application.getApplicantUserId(),
@@ -330,9 +394,68 @@ public class PetShopRegistrationApplicationServiceImpl
         return application.toDTO();
     }
     
+    @Transactional
+    public RegistrationApplicationResubmissionDto resubmitApplication(
+            RegistrationApplicationResubmissionDto dto) {
+
+        PetShopRegistrationApplication application =
+                repository.findById(dto.getApplicationId())
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Application not found"));
+
+        ApplicationStatus fromStatus =
+                ApplicationStatus.valueOf(
+                        application.getStatus().getStatusCode());
+
+        if (fromStatus != ApplicationStatus.REJECTED_BY_CVO) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Only CVO rejected applications can be resubmitted");
+        }
+
+        RegistrationApplicationResubmission resubmission =
+                dto.toEntity();
+
+        resubmission.setApplication(application);
+        resubmission.setResubmittedAt(LocalDateTime.now());
+        resubmission.setResubmittedBy(application.getApplicantUserId());
+
+        resubmissionRepository.save(resubmission);
+
+        application.setStatus(
+                statusRepository.findByStatusCode(
+                        ApplicationStatus.RESUBMITTED.name())
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Status RESUBMITTED not found")));
+
+        repository.save(application);
+
+        historyService.logStatusChange(
+                application.getId(),
+                fromStatus,
+                ApplicationStatus.RESUBMITTED,
+                "SYSTEM",
+                "Application resubmitted",
+                "RESUBMIT");
+
+        notificationService.createNotification(
+                application.getApplicantUserId(),
+                "PET_SHOP",
+                application.getId(),
+                "Application Resubmitted",
+                "Your application has been resubmitted successfully.",
+                "INFO");
+
+        return resubmission.toDTO();
+    }
     
     @Transactional(readOnly = true)
-    public List<PetShopRegistrationApplicationDto> getMyForwardedApplications() {
+    public List<PetShopRegistrationApplicationDto> getMyForwardedApplications(String status) {
 
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
@@ -355,15 +478,23 @@ public class PetShopRegistrationApplicationServiceImpl
 
         System.out.println("Office ID = " + officeId);
 
-        List<PetShopRegistrationApplicationDto> applications =
-                repository.findByCvOfficeIdOrderByIdDesc(officeId)
-                        .stream()
-                        .map(PetShopRegistrationApplication::toDTO)
-                        .toList();
+        List<PetShopRegistrationApplication> applications =
+                repository.findByCvOfficeIdOrderByIdDesc(officeId);
+
+        if (status != null && !status.isBlank()) {
+            applications = applications.stream()
+                    .filter(a ->
+                            a.getStatus() != null &&
+                            status.equalsIgnoreCase(
+                                    a.getStatus().getStatusCode()))
+                    .toList();
+        }
 
         System.out.println("Applications Found = " + applications.size());
 
-        return applications;
+        return applications.stream()
+                .map(PetShopRegistrationApplication::toDTO)
+                .toList();
     }
     @Transactional
     public PetShopRegistrationApplicationDto approveApplication(Long id) {
@@ -374,15 +505,29 @@ public class PetShopRegistrationApplicationServiceImpl
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Application not found"));
+        
+        ApplicationStatus fromStatus = application.getStatus() == null
+                ? null
+                : ApplicationStatus.valueOf(
+                        application.getStatus().getStatusCode());
 
         application.setStatus(
-                statusRepository.findByStatusCode("APPLICATION_APPROVED")
+        		statusRepository.findByStatusCode(
+        		        ApplicationStatus.APPLICATION_APPROVED.name())
                         .orElseThrow(() ->
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Status APPLICATION_APPROVED not found")));
 
         repository.save(application);
+        
+        historyService.logStatusChange(
+                application.getId(),
+                fromStatus,
+                ApplicationStatus.APPLICATION_APPROVED,
+                "SYSTEM",
+                "Application approved",
+                "APPROVE");
 
         notificationService.createNotification(
                 application.getApplicantUserId(),
@@ -404,15 +549,28 @@ public class PetShopRegistrationApplicationServiceImpl
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Application not found"));
+        
+        ApplicationStatus fromStatus = application.getStatus() == null
+                ? null
+                : ApplicationStatus.valueOf(
+                        application.getStatus().getStatusCode());
 
         application.setStatus(
-                statusRepository.findByStatusCode("APPLICATION_REJECTED")
+        		statusRepository.findByStatusCode(
+        		        ApplicationStatus.APPLICATION_REJECTED.name())
                         .orElseThrow(() ->
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Status APPLICATION_REJECTED not found")));
 
         repository.save(application);
+        historyService.logStatusChange(
+                application.getId(),
+                fromStatus,
+                ApplicationStatus.APPLICATION_REJECTED,
+                "SYSTEM",
+                "Application rejected",
+                "REJECT");
 
         notificationService.createNotification(
                 application.getApplicantUserId(),

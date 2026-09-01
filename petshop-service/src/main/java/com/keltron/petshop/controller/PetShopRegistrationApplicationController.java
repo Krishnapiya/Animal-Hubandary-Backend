@@ -1,6 +1,7 @@
 package com.keltron.petshop.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import com.keltron.petshop.dto.RegistrationApplicationResubmissionDto;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpMethod;
@@ -30,7 +31,6 @@ import com.keltron.utility.responses.AbstractResponse;
 import com.keltron.utility.web.controller.abs.AbstractController;
 
 import jakarta.validation.Valid;
-
 @RestController
 
 // ************* CHANGED *************
@@ -122,17 +122,22 @@ public class PetShopRegistrationApplicationController
                     defaultValue = "false")
             boolean forwardedOnly,
 
+            @RequestParam(
+                    name = "status",
+                    required = false)
+            String status,
+
             @Valid PetShopRegistrationApplicationSearchBean searchBean) {
     	System.out.println("forwardedOnly = " + forwardedOnly);
 
-        if (forwardedOnly) {
-            return new ResponseBuilder()
-                    .withData(serviceImpl.getMyForwardedApplications())
-                    .build();
-        }
-
+    	if (forwardedOnly) {
+    	    return new ResponseBuilder()
+    	            .withData(serviceImpl.getMyForwardedApplications(status))
+    	            .build();
+    	}
         return new ResponseBuilder()
-                .withData(serviceImpl.getPetShopApplications())
+                .withData(
+                        serviceImpl.getPetShopApplications(status))
                 .build();
     }
     @GetMapping("/view/{id}")
@@ -185,10 +190,15 @@ public class PetShopRegistrationApplicationController
                 .build();
     }
     @GetMapping("/my-forwarded")
-    public ResponseEntity<AbstractResponse> getMyForwardedApplications() {
+    public ResponseEntity<AbstractResponse> getMyForwardedApplications(
+
+            @RequestParam(
+                    name = "status",
+                    required = false)
+            String status) {
 
         return new ResponseBuilder()
-                .withData(serviceImpl.getMyForwardedApplications())
+                .withData(serviceImpl.getMyForwardedApplications(status))
                 .build();
     }
     @PatchMapping("/submit/{id}")
@@ -199,11 +209,40 @@ public class PetShopRegistrationApplicationController
                 .withData(serviceImpl.submitApplication(id))
                 .build();
     }
-    @GetMapping("/my-applications")
-    public ResponseEntity<AbstractResponse> myApplications() {
+    
+    @PatchMapping("/resubmit")
+    public ResponseEntity<AbstractResponse> resubmitApplication(
+            @Valid
+            @RequestBody
+            Request<RegistrationApplicationResubmissionDto> request) {
+
+        if (!(request.isValid()
+                && request.getPayLoad().isValid(HttpMethod.PATCH))) {
+
+            return new ResponseBuilder()
+                    .withError(
+                            HttpStatus.BAD_REQUEST,
+                            request.getPayLoad().getErrors())
+                    .build();
+        }
 
         return new ResponseBuilder()
-                .withData(serviceImpl.getMyApplications())
+                .withData(
+                        serviceImpl.resubmitApplication(
+                                request.getPayLoad()))
+                .build();
+    }
+    
+    @GetMapping("/my-applications")
+    public ResponseEntity<AbstractResponse> myApplications(
+
+            @RequestParam(
+                    name = "status",
+                    required = false)
+            String status) {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.getMyApplications(status))
                 .build();
     }
     @PostMapping("/approve/{id}")
@@ -221,6 +260,7 @@ public class PetShopRegistrationApplicationController
                 .withData(serviceImpl.rejectApplication(id))
                 .build();
     }
+    
     
     
 }

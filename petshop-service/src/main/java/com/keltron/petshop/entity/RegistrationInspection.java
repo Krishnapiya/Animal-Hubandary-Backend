@@ -52,8 +52,8 @@ public class RegistrationInspection extends AbstractEntity {
     @Column(name = "recommendation")
     private String recommendation;
 
-    @Column(name = "status")
-    private String status;
+//    @Column(name = "status")
+//    private String status;
 
     
 
@@ -87,8 +87,8 @@ public class RegistrationInspection extends AbstractEntity {
         this.recommendation =
                 inspectionDto.getRecommendation();
 
-        this.status =
-                inspectionDto.getStatus();
+//        this.status =
+//                inspectionDto.getStatus();
 
         
     }
@@ -109,7 +109,7 @@ public class RegistrationInspection extends AbstractEntity {
         dto.setInspectionRemarks(inspectionRemarks);
         dto.setInspectionReport(inspectionReport);
         dto.setRecommendation(recommendation);
-        dto.setStatus(status);
+//        dto.setStatus(status);
       
 
         return dto;
