@@ -329,7 +329,6 @@ public class DogBreederRegistrationApplicationServiceImpl
 
         return mapToDto(savedApp);
     }
-
     /**
      * Step 5: Breeder Resubmits Application
      */

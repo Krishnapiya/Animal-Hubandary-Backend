@@ -51,8 +51,9 @@ public class DogBreederRegistrationInspection extends AbstractEntity {
 
     @Column(name = "recommendation")
     private String recommendation;
-
-
+    @Column(name = "report_remarks")
+    private String reportRemarks;
+    
     public DogBreederRegistrationInspection(Long id) {
         this.id = id;
     }
@@ -77,6 +78,8 @@ public class DogBreederRegistrationInspection extends AbstractEntity {
         this.inspectionRemarks = inspectionDto.getInspectionRemarks();
         this.inspectionReport = inspectionDto.getInspectionReport();
         this.recommendation = inspectionDto.getRecommendation();
+        this.reportRemarks = inspectionDto.getReportRemarks();
+
     }
 
     @SuppressWarnings("unchecked")
@@ -96,6 +99,7 @@ public class DogBreederRegistrationInspection extends AbstractEntity {
         dto.setInspectionRemarks(inspectionRemarks);
         dto.setInspectionReport(inspectionReport);
         dto.setRecommendation(recommendation);
+        dto.setReportRemarks(reportRemarks);
 
         return dto;
     }

@@ -13,7 +13,6 @@ import com.keltron.dogbreeder.services.impl.DogBreederRegistrationApplicationRes
 
 @RestController
 @RequestMapping("/dogbreeder/auth/awb/resubmission")
-@CrossOrigin(origins = "*")
 public class DogBreederRegistrationApplicationResubmissionController {
 
     @Autowired

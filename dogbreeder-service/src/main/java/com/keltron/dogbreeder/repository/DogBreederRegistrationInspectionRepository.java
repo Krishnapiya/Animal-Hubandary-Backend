@@ -12,7 +12,7 @@ public interface DogBreederRegistrationInspectionRepository
                 Long> {
 
     Optional<DogBreederRegistrationInspection>
-            findByApplication_Id(
+            findTopByApplication_IdOrderByIdDesc(
                     Long applicationId);
 
     List<DogBreederRegistrationInspection>
