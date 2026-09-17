@@ -32,6 +32,7 @@ public class DogBreederRegistrationInspectionDto extends AbstractDto {
 
     private String recommendation;
 
+    private String reportRemarks;
    
 
     @SuppressWarnings("unchecked")
@@ -83,6 +84,8 @@ public class DogBreederRegistrationInspectionDto extends AbstractDto {
                 ", inspectionRemarks='" + inspectionRemarks + '\'' +
                 ", inspectionReport='" + inspectionReport + '\'' +
                 ", recommendation='" + recommendation + '\'' +
+                ", reportRemarks='" + reportRemarks + '\'' +
+
                 '}';
     }
 }

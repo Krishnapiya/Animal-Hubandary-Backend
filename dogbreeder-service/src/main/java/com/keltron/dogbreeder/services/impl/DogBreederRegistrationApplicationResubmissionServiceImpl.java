@@ -15,7 +15,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.keltron.dogbreeder.dto.DogBreederRegistrationApplicationResubmissionUploadDto;
 import com.keltron.dogbreeder.entity.DogBreederRegistrationApplication;
+import com.keltron.dogbreeder.repository.DogBreederApplicationStatusMasterRepository;
 import com.keltron.dogbreeder.repository.DogBreederRegistrationApplicationRepository;
+import com.keltron.utility.constants.ApplicationStatus;
 import com.keltron.utility.jpa.entity.ApplicationStatusMaster;
 
 @Service
@@ -23,6 +25,9 @@ public class DogBreederRegistrationApplicationResubmissionServiceImpl {
 
     @Autowired
     private DogBreederRegistrationApplicationRepository applicationRepository;
+    
+    @Autowired
+    private DogBreederApplicationStatusMasterRepository statusMasterRepository;
 
     @Transactional
     public DogBreederRegistrationApplicationResubmissionUploadDto uploadDocument(
@@ -65,8 +70,14 @@ public class DogBreederRegistrationApplicationResubmissionServiceImpl {
 
         // 4. Update Status and Save Entity
         // Update status ID to Resubmitted (e.g. 10L or your project's resubmitted status ID)
-        application.setStatus(new ApplicationStatusMaster(10L));
+        ApplicationStatusMaster resubmittedStatus = statusMasterRepository
+                .findByStatusCode(ApplicationStatus.RESUBMITTED.name())
+                .orElseThrow(() -> new RuntimeException(
+                        "RESUBMITTED status not found in application_status_master"));
+
+        application.setStatus(resubmittedStatus);        
         application.setSubmittedAt(LocalDateTime.now());
+        
 
         applicationRepository.save(application);
 
