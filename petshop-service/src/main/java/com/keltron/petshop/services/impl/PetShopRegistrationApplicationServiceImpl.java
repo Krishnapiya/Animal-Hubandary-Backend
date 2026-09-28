@@ -119,8 +119,16 @@ public class PetShopRegistrationApplicationServiceImpl
         dto.setApplicationId(application.getId());
         dto.setApplicationNumber(application.getApplicationNumber());
 
+        boolean isResubmitted = "RESUBMITTED".equalsIgnoreCase(application.getApplicationKind())
+                || (application.getStatus() != null && "RESUBMITTED".equalsIgnoreCase(application.getStatus().getStatusCode()))
+                || !resubmissionRepository.findByApplication_IdOrderByResubmittedAtDesc(id).isEmpty();
+
+        String applicationKind = isResubmitted ? "RESUBMITTED" : (application.getApplicationKind() != null ? application.getApplicationKind() : "NEW");
+        String applicationType = isResubmitted ? "Resubmitted Application" : "New Application";
+
         dto.setEntityType(application.getEntityType());
-        dto.setApplicationKind(application.getApplicationKind());
+        dto.setApplicationKind(applicationKind);
+        dto.setApplicationType(applicationType);
 
         if (application.getStatus() != null) {
         	dto.setStatus(application.getStatus().getStatusName());
@@ -433,6 +441,7 @@ public class PetShopRegistrationApplicationServiceImpl
                                         HttpStatus.NOT_FOUND,
                                         "Status RESUBMITTED not found")));
 
+        application.setSubmittedAt(LocalDateTime.now());
         repository.save(application);
 
         historyService.logStatusChange(
