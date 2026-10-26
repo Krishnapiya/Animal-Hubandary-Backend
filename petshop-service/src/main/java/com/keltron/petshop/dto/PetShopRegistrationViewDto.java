@@ -16,6 +16,7 @@ public class PetShopRegistrationViewDto {
 
     private String entityType;
     private String applicationKind;
+    private String applicationType;
 
     private String status;
     private String district;
@@ -25,6 +26,7 @@ public class PetShopRegistrationViewDto {
     // Pet Shop Details
     private String shopName;
     private String ownerName;
+    private String panNumber;
     
     private String fatherOrHusbandName;
     private Integer age;

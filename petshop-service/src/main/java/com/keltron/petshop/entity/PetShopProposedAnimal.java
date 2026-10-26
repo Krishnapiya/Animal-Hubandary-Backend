@@ -71,6 +71,12 @@ public class PetShopProposedAnimal extends AbstractEntity {
 	@Column(name = "gender")
 	private String gender;
 
+	@Column(name = "custom_species_name", length = 120)
+	private String customSpeciesName;
+
+	@Column(name = "custom_breed_name", length = 120)
+	private String customBreedName;
+
 	public PetShopProposedAnimal(Long id) {
 		this.id = id;
 	}
@@ -109,6 +115,18 @@ public class PetShopProposedAnimal extends AbstractEntity {
 		}
 		if (ValidationUtils.isValid(animalDto.getGender())) {
 		    gender = animalDto.getGender();
+		}
+
+		if (ValidationUtils.isValid(animalDto.getCustomSpeciesName())) {
+			customSpeciesName = animalDto.getCustomSpeciesName().trim();
+		} else {
+			customSpeciesName = null;
+		}
+
+		if (ValidationUtils.isValid(animalDto.getCustomBreedName())) {
+			customBreedName = animalDto.getCustomBreedName().trim();
+		} else {
+			customBreedName = null;
 		}
 
 		// Null check used because 0 is valid in DB
@@ -163,6 +181,8 @@ public class PetShopProposedAnimal extends AbstractEntity {
 		}
 		dto.setBreed(breed);
 		dto.setGender(gender);
+		dto.setCustomSpeciesName(customSpeciesName);
+		dto.setCustomBreedName(customBreedName);
 		dto.setQuantity(quantity);
 		dto.setDescription(description);
 		dto.setPriceOffered(priceOffered);

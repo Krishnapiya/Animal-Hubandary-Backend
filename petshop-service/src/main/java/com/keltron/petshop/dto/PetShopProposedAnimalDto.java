@@ -30,6 +30,10 @@ public class PetShopProposedAnimalDto extends AbstractDto {
 
 	private String breed;
 
+	private String customSpeciesName;
+
+	private String customBreedName;
+
 	private Integer quantity;
 
 	private String description;
@@ -68,6 +72,12 @@ public class PetShopProposedAnimalDto extends AbstractDto {
 		    entity.setSpecies(animalSpecies);
 		}
 		entity.setBreed(breed);
+		entity.setCustomSpeciesName(
+				ValidationUtils.isValid(customSpeciesName) ? customSpeciesName.trim() : null
+		);
+		entity.setCustomBreedName(
+				ValidationUtils.isValid(customBreedName) ? customBreedName.trim() : null
+		);
 		entity.setGender(gender);
 		entity.setQuantity(quantity);
 		entity.setDescription(description);
@@ -122,6 +132,26 @@ public class PetShopProposedAnimalDto extends AbstractDto {
 				addError("display_order", displayOrder);
 			}
 
+			if (customSpeciesName != null && customSpeciesName.trim().length() > 120) {
+				addError("customSpeciesName", "Custom species name cannot exceed 120 characters");
+			}
+
+			if (customBreedName != null && customBreedName.trim().length() > 120) {
+				addError("customBreedName", "Custom breed name cannot exceed 120 characters");
+			}
+
+			if (species != null && species.getName() != null && species.getName().equalsIgnoreCase("Other")) {
+				if (!ValidationUtils.isValid(customSpeciesName) || customSpeciesName.trim().isEmpty()) {
+					addError("customSpeciesName", "Custom species name is required when 'Other' species is selected");
+				}
+			}
+
+			if (breed != null && breed.equalsIgnoreCase("Other")) {
+				if (!ValidationUtils.isValid(customBreedName) || customBreedName.trim().isEmpty()) {
+					addError("customBreedName", "Custom breed name is required when 'Other' breed is selected");
+				}
+			}
+
 		} else if (httpMethod.equals(HttpMethod.PATCH)) {
 
 			if (!ValidationUtils.isValid(id)) {
@@ -144,6 +174,26 @@ public class PetShopProposedAnimalDto extends AbstractDto {
 
 			if (displayOrder != null && displayOrder < 0) {
 				addError("display_order", displayOrder);
+			}
+
+			if (customSpeciesName != null && customSpeciesName.trim().length() > 120) {
+				addError("customSpeciesName", "Custom species name cannot exceed 120 characters");
+			}
+
+			if (customBreedName != null && customBreedName.trim().length() > 120) {
+				addError("customBreedName", "Custom breed name cannot exceed 120 characters");
+			}
+
+			if (species != null && species.getName() != null && species.getName().equalsIgnoreCase("Other")) {
+				if (!ValidationUtils.isValid(customSpeciesName) || customSpeciesName.trim().isEmpty()) {
+					addError("customSpeciesName", "Custom species name is required when 'Other' species is selected");
+				}
+			}
+
+			if (breed != null && breed.equalsIgnoreCase("Other")) {
+				if (!ValidationUtils.isValid(customBreedName) || customBreedName.trim().isEmpty()) {
+					addError("customBreedName", "Custom breed name is required when 'Other' breed is selected");
+				}
 			}
 		}
 

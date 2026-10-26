@@ -39,6 +39,9 @@ public class SecurityConfig {
 	            .authorizeHttpRequests(auth -> auth
 	                    .requestMatchers("/").permitAll()
 	                    .requestMatchers("/petshop/auth/application-document/view/**").permitAll()
+	                    .requestMatchers("/petshop/auth/registration-inspection/view-report/**").permitAll()
+	                    .requestMatchers("/auth/application-document/view/**").permitAll()
+	                    .requestMatchers("/auth/registration-inspection/view-report/**").permitAll()
 	                    .anyRequest().authenticated()
 	            )
 	            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))

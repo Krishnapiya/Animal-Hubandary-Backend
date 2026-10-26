@@ -33,6 +33,12 @@ public class DogBreederBreedPredicates {
                 );
             }
 
+            if (ValidationUtils.isValid(searchBean.getSpeciesId())) {
+                predicates.add(
+                    criteriaBuilder.equal(root.get("species").get("id"), searchBean.getSpeciesId())
+                );
+            }
+
             if (ValidationUtils.isValid(searchBean.getBreedName())) {
                 predicates.add(
                     criteriaBuilder.like(

@@ -4,6 +4,10 @@ import java.util.List;
 import java.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,7 +22,10 @@ import com.keltron.citizen.repository.ComplaintDocumentRepository;
 import com.keltron.citizen.repository.ComplaintRegistrationRepository;
 import com.keltron.utility.constants.GrievanceApplicationStatus;
 import com.keltron.utility.jpa.entity.ApplicationStatusMaster;
+import com.keltron.utility.jpa.entity.Users;
+import com.keltron.utility.jpa.repository.UsersRepository;
 import com.keltron.utility.manage.service.abs.AbstractJpaService;
+
 @Service
 public class ComplaintRegistrationServiceImpl
         extends AbstractJpaService<
@@ -36,11 +43,61 @@ public class ComplaintRegistrationServiceImpl
     @Autowired
     private ComplaintRegistrationStatusHistoryServiceImpl historyService;
 
+    @Autowired
+    private UsersRepository usersRepository;
+
+    private Users getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            return null;
+        }
+
+        String username = auth.getName();
+
+        if (auth.getPrincipal() instanceof Jwt jwt && jwt.getSubject() != null) {
+            username = jwt.getSubject();
+        }
+
+        if (username == null || "anonymousUser".equalsIgnoreCase(username)) {
+            return null;
+        }
+
+        return usersRepository.findByUsername(username).orElse(null);
+    }
+
+    private boolean isCitizen(Users user) {
+        if (user == null) {
+            return true;
+        }
+        if (user.getRole() != null && user.getRole().getRoleName() != null) {
+            String role = user.getRole().getRoleName().trim().toUpperCase();
+            if ("ADMIN".equals(role) || "DISTRICT_OFFICER".equals(role)) {
+                return false;
+            }
+        }
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getAuthorities() != null) {
+            for (GrantedAuthority ga : auth.getAuthorities()) {
+                String authName = ga.getAuthority().toUpperCase();
+                if (authName.contains("ADMIN") || authName.contains("DISTRICT_OFFICER")) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     @Override
     @Transactional
     public ComplaintRegistration save(ComplaintRegistrationDto dto) {
 
-        dto.setCitizenUserId(1L); // temporary
+        Users currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        }
+
+        dto.setCitizenUserId(currentUser.getId());
 
         if (dto.getComplaintNumber() == null
                 || dto.getComplaintNumber().isBlank()) {
@@ -87,11 +144,76 @@ public class ComplaintRegistrationServiceImpl
         return complaint;
     }
 
+    @Override
+    @Transactional
+    public ComplaintRegistration update(Long id, ComplaintRegistrationDto dto) {
+        ComplaintRegistration complaint = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Complaint not found"));
+
+        Users currentUser = getCurrentUser();
+        if (currentUser != null && isCitizen(currentUser)) {
+            if (complaint.getCitizenUserId() != null && !complaint.getCitizenUserId().equals(currentUser.getId())) {
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Access denied: You can only update your own complaints");
+            }
+            dto.setCitizenUserId(currentUser.getId());
+        }
+
+        return super.update(id, dto);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ComplaintRegistrationDto> getComplaints(String status) {
+        Users currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        }
+
+        List<ComplaintRegistration> complaints;
+        if (isCitizen(currentUser)) {
+            complaints = repository.findByCitizenUserIdOrderByIdDesc(currentUser.getId());
+        } else {
+            complaints = repository.findAllByOrderByIdDesc();
+        }
+
+        if (status != null && !status.isBlank()) {
+            complaints = complaints.stream()
+                    .filter(c -> c.getStatus() != null &&
+                            (status.equalsIgnoreCase(c.getStatus().getStatusCode())
+                                    || (c.getStatus().getStatusName() != null && status.equalsIgnoreCase(c.getStatus().getStatusName()))))
+                    .toList();
+        }
+
+        return complaints.stream()
+                .map(ComplaintRegistration::toDTO)
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public List<ComplaintRegistrationDto> getComplaints() {
+        return getComplaints(null);
+    }
 
-        return repository.findAll()
-                .stream()
+    @Transactional(readOnly = true)
+    public List<ComplaintRegistrationDto> getMyComplaints(String status) {
+        Users currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        }
+
+        List<ComplaintRegistration> complaints =
+                repository.findByCitizenUserIdOrderByIdDesc(currentUser.getId());
+
+        if (status != null && !status.isBlank()) {
+            complaints = complaints.stream()
+                    .filter(c -> c.getStatus() != null &&
+                            (status.equalsIgnoreCase(c.getStatus().getStatusCode())
+                                    || (c.getStatus().getStatusName() != null && status.equalsIgnoreCase(c.getStatus().getStatusName()))))
+                    .toList();
+        }
+
+        return complaints.stream()
                 .map(ComplaintRegistration::toDTO)
                 .toList();
     }
@@ -105,6 +227,15 @@ public class ComplaintRegistrationServiceImpl
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Complaint not found"));
+
+        Users currentUser = getCurrentUser();
+        if (currentUser != null && isCitizen(currentUser)) {
+            if (complaint.getCitizenUserId() != null && !complaint.getCitizenUserId().equals(currentUser.getId())) {
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Access denied: You can only view your own complaints");
+            }
+        }
 
         ComplaintRegistrationViewDto dto =
                 new ComplaintRegistrationViewDto();
@@ -158,6 +289,15 @@ public class ComplaintRegistrationServiceImpl
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Complaint not found"));
+
+        Users currentUser = getCurrentUser();
+        if (currentUser != null && isCitizen(currentUser)) {
+            if (complaint.getCitizenUserId() != null && !complaint.getCitizenUserId().equals(currentUser.getId())) {
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Access denied: You can only delete your own complaints");
+            }
+        }
 
         repository.delete(complaint);
 

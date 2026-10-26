@@ -128,6 +128,7 @@ public class PetShopRegistrationApplication extends AbstractEntity {
         dto.setApplicationNumber(applicationNumber);
         dto.setEntityType(entityType);
         dto.setApplicationKind(applicationKind);
+        dto.setApplicationType("RESUBMITTED".equalsIgnoreCase(applicationKind) ? "Resubmitted Application" : "New Application");
 
         if (status != null) {
             dto.setStatusId(status.getId());

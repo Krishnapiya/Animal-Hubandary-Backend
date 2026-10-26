@@ -53,6 +53,8 @@ public class DogBreederRegistrationInspection extends AbstractEntity {
     private String recommendation;
     @Column(name = "report_remarks")
     private String reportRemarks;
+    @Column(name = "inspection_date_visible")
+    private Boolean inspectionDateVisible = false;
     
     public DogBreederRegistrationInspection(Long id) {
         this.id = id;
@@ -79,6 +81,9 @@ public class DogBreederRegistrationInspection extends AbstractEntity {
         this.inspectionReport = inspectionDto.getInspectionReport();
         this.recommendation = inspectionDto.getRecommendation();
         this.reportRemarks = inspectionDto.getReportRemarks();
+        if (inspectionDto.getInspectionDateVisible() != null) {
+            this.inspectionDateVisible = inspectionDto.getInspectionDateVisible();
+        }
 
     }
 
@@ -96,6 +101,7 @@ public class DogBreederRegistrationInspection extends AbstractEntity {
         }
 
         dto.setInspectionDate(inspectionDate);
+        dto.setInspectionDateVisible(inspectionDateVisible);
         dto.setInspectionRemarks(inspectionRemarks);
         dto.setInspectionReport(inspectionReport);
         dto.setRecommendation(recommendation);

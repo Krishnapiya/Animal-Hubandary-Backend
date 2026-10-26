@@ -32,6 +32,9 @@ public class DogBreederDetail extends AbstractEntity {
     @Column(name = "breeder_name", nullable = false)
     private String breederName;
 
+    @Column(name = "pan_number", length = 10)
+    private String panNumber;
+
     @Column(name = "address_line1", nullable = false)
     private String addressLine1;
 
@@ -77,6 +80,11 @@ public class DogBreederDetail extends AbstractEntity {
                     dogBreederDetailDto.getBreederName();
 
         if (ValidationUtils.isValid(
+                dogBreederDetailDto.getPanNumber()))
+            this.panNumber =
+                    dogBreederDetailDto.getPanNumber().trim().toUpperCase();
+
+        if (ValidationUtils.isValid(
                 dogBreederDetailDto.getAddressLine1()))
             this.addressLine1 =
                     dogBreederDetailDto.getAddressLine1();
@@ -117,6 +125,7 @@ public class DogBreederDetail extends AbstractEntity {
         dto.setId(id);
         dto.setApplicationId(applicationId);
         dto.setBreederName(breederName);
+        dto.setPanNumber(panNumber);
         dto.setAddressLine1(addressLine1);
         dto.setAddressLine2(addressLine2);
         dto.setCity(city);

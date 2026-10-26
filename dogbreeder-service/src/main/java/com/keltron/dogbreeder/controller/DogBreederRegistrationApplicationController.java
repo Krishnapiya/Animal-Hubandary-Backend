@@ -51,7 +51,8 @@ public class DogBreederRegistrationApplicationController
     private static final String ADMIN_OR_CVO_AUTHORITY =
             "hasAnyAuthority("
                     + "'ADMIN', 'ROLE_ADMIN', "
-                    + "'CVO', 'ROLE_CVO'"
+                    + "'CVO', 'ROLE_CVO', "
+                    + "'DISTRICT_OFFICER', 'ROLE_DISTRICT_OFFICER'"
                     + ")";
 
     @Autowired
@@ -112,20 +113,50 @@ public class DogBreederRegistrationApplicationController
     }
 
     /**
-     * Admin list.
-     */
-    /**
-     * Admin list.
+     * Admin and CVO list.
      */
     @GetMapping("/list/all")
-    @PreAuthorize(ADMIN_AUTHORITY)
+    @PreAuthorize(ADMIN_OR_CVO_AUTHORITY)
     public ResponseEntity<AbstractResponse> findByCriteria(
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam(
                     name = "dropDown",
                     required = false,
                     defaultValue = "false")
             boolean asDropdown,
+            @RequestParam(
+                    name = "forwardedOnly",
+                    required = false,
+                    defaultValue = "false")
+            boolean forwardedOnly,
             @Valid DogBreederRegistrationApplicationSearchBean searchBean) {
+
+        if (jwt != null) {
+            String username = jwt.getSubject();
+            Users user = usersRepository.findByUsername(username).orElse(null);
+            if (user != null && user.getRole() != null) {
+                String roleName = user.getRole().getRoleName();
+                boolean isCvoOrDistrictOfficer = roleName != null && (
+                        roleName.equalsIgnoreCase("CVO") ||
+                        roleName.equalsIgnoreCase("ROLE_CVO") ||
+                        roleName.equalsIgnoreCase("DISTRICT_OFFICER") ||
+                        roleName.equalsIgnoreCase("ROLE_DISTRICT_OFFICER")
+                );
+                if (isCvoOrDistrictOfficer || forwardedOnly) {
+                    Office office = user.getOffice();
+                    if (office != null && office.getDistrict() != null) {
+                        Integer districtId = office.getDistrict().getId();
+                        return new ResponseBuilder()
+                                .withData(serviceImpl.getCvoForwardedApplications(districtId))
+                                .build();
+                    } else {
+                        return new ResponseBuilder()
+                                .withData(java.util.Collections.emptyList())
+                                .build();
+                    }
+                }
+            }
+        }
 
         searchBean.setEntityType("DOG_BREEDER");
 
@@ -231,6 +262,7 @@ public class DogBreederRegistrationApplicationController
      */
     @Transactional
     @GetMapping("/cvo/list/all")
+    @PreAuthorize(ADMIN_OR_CVO_AUTHORITY)
     public ResponseEntity<AbstractResponse> findCvoForwardedApplications(
             @AuthenticationPrincipal Jwt jwt) {
 
@@ -241,17 +273,13 @@ public class DogBreederRegistrationApplicationController
 
         Office office = user.getOffice();
 
-        if (office == null) {
-            throw new RuntimeException("Office not mapped to user");
+        if (office == null || office.getDistrict() == null) {
+            return new ResponseBuilder()
+                    .withData(java.util.Collections.emptyList())
+                    .build();
         }
 
-        District district = office.getDistrict();  
-
-        if (district == null) {
-            throw new RuntimeException("District not mapped to Office");
-        }
-
-        Integer districtId = district.getId();
+        Integer districtId = office.getDistrict().getId();
 
         return new ResponseBuilder()
                 .withData(serviceImpl.getCvoForwardedApplications(districtId))

@@ -467,7 +467,10 @@ public class PetShopRegistrationPdfService {
         if (animals != null && !animals.isEmpty()) {
             for (PetShopProposedAnimalDto animal : animals) {
                 table.addCell(normalCell(speciesName(animal)));
-                table.addCell(normalCell(value(animal.getBreed())));
+                String breedDisplay = (animal.getCustomBreedName() != null && !animal.getCustomBreedName().isBlank())
+                        ? ("Other".equalsIgnoreCase(animal.getBreed()) ? animal.getBreed() + " - " + animal.getCustomBreedName().trim() : animal.getCustomBreedName().trim())
+                        : value(animal.getBreed());
+                table.addCell(normalCell(breedDisplay));
                 table.addCell(normalCell(String.valueOf(animal.getQuantity())));
                 table.addCell(normalCell(value(animal.getAgeDescription())));
                 table.addCell(normalCell(value(animal.getPriceOffered())));
@@ -726,11 +729,15 @@ public class PetShopRegistrationPdfService {
         }
 
         DropdownPayload<Long> species = animal.getSpecies();
-        if (species == null) {
-            return "-";
+        String baseName = species != null ? value(species.getName()) : "-";
+
+        if (animal.getCustomSpeciesName() != null && !animal.getCustomSpeciesName().isBlank()) {
+            return "Other".equalsIgnoreCase(baseName)
+                    ? baseName + " - " + animal.getCustomSpeciesName().trim()
+                    : animal.getCustomSpeciesName().trim();
         }
 
-        return value(species.getName());
+        return baseName;
     }
 
     private void addCenter(Document document, String text, Font font) throws Exception {

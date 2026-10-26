@@ -18,4 +18,6 @@ public interface DogBreederBreedRepository
     );
 
     List<DogBreederBreed> findByDogBreederDetail_Id(Long dogBreederDetailId);
+
+    List<DogBreederBreed> findByDogBreederDetail_IdOrderByDisplayOrderAscIdAsc(Long dogBreederDetailId);
 }

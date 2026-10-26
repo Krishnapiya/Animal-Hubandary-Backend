@@ -14,7 +14,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableJpaRepositories(basePackages = {
-        "com.keltron.citizen.repository"
+        "com.keltron.citizen.repository",
+        "com.keltron.utility.jpa.repository"
 })
 @ComponentScan(basePackages = {
         "com.keltron.citizen",

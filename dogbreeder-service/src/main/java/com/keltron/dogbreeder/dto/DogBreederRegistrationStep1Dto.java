@@ -11,6 +11,7 @@ public class DogBreederRegistrationStep1Dto {
     private Integer districtId;
 
     private String breederName;
+    private String panNumber;
     private String addressLine1;
     private String addressLine2;
     private String city;

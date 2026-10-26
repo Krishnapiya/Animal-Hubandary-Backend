@@ -42,6 +42,16 @@ public class ComplaintInvestigationServiceImpl
     @Autowired
     private ComplaintRegistrationStatusHistoryServiceImpl historyService;
 
+    private boolean isOfficerOrAdmin() {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        return auth.getAuthorities().stream().anyMatch(a -> {
+            String r = a.getAuthority().toUpperCase();
+            return r.contains("ADMIN") || r.contains("OFFICER") || r.contains("CVO");
+        });
+    }
+
     // =========================================================
     // SCHEDULE INVESTIGATION
     // =========================================================
@@ -51,6 +61,15 @@ public class ComplaintInvestigationServiceImpl
             Long complaintId,
             LocalDate investigationDate,
             String investigationRemarks) {
+        return scheduleInvestigation(complaintId, investigationDate, investigationRemarks, false);
+    }
+
+    @Transactional
+    public ComplaintInvestigationDto scheduleInvestigation(
+            Long complaintId,
+            LocalDate investigationDate,
+            String investigationRemarks,
+            Boolean investigationDateVisible) {
 
         ComplaintRegistration complaint =
                 complaintRepository.findById(complaintId)
@@ -59,8 +78,11 @@ public class ComplaintInvestigationServiceImpl
                                         HttpStatus.NOT_FOUND,
                                         "Complaint not found"));
 
-        ComplaintInvestigation investigation =
-                new ComplaintInvestigation();
+        boolean isVisible = Boolean.TRUE.equals(investigationDateVisible);
+        complaint.setInvestigationDateVisible(isVisible);
+
+        ComplaintInvestigation investigation = repository.findByComplaint_Id(complaintId)
+                .orElseGet(ComplaintInvestigation::new);
 
         investigation.setComplaint(complaint);
 
@@ -92,6 +114,10 @@ public class ComplaintInvestigationServiceImpl
         complaintRepository.save(complaint);
 
         // Save status history
+        String historyRemarks = isVisible
+                ? (investigationRemarks != null && !investigationRemarks.isBlank() ? investigationRemarks : "Investigation scheduled")
+                : "Investigation scheduled (Hidden from citizen)";
+
         historyService.logStatusChange(
                 complaint.getId(),
                 fromStatus != null
@@ -99,10 +125,50 @@ public class ComplaintInvestigationServiceImpl
                         : null,
                 status.getStatusCode(),
                 null,
-                investigationRemarks,
+                historyRemarks,
                 status.getStatusCode());
 
-        return savedInvestigation.toDTO();
+        ComplaintInvestigationDto dto = savedInvestigation.toDTO();
+        dto.setInvestigationDateVisible(isVisible);
+        return dto;
+    }
+
+    // =========================================================
+    // TOGGLE VISIBILITY
+    // =========================================================
+
+    @Transactional
+    public ComplaintInvestigationDto toggleVisibility(Long complaintId, Boolean visible) {
+        ComplaintRegistration complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Complaint not found"));
+
+        boolean newVisibility = (visible != null)
+                ? visible
+                : !Boolean.TRUE.equals(complaint.getInvestigationDateVisible());
+
+        complaint.setInvestigationDateVisible(newVisibility);
+        complaintRepository.save(complaint);
+
+        historyService.logStatusChange(
+                complaint.getId(),
+                complaint.getStatus() != null ? complaint.getStatus().getStatusCode() : null,
+                complaint.getStatus() != null ? complaint.getStatus().getStatusCode() : null,
+                null,
+                newVisibility ? "Investigation date revealed to citizen" : "Investigation date hidden from citizen",
+                "TOGGLE_VISIBILITY");
+
+        ComplaintInvestigation investigation = repository.findByComplaint_Id(complaintId)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Investigation not found"));
+
+        ComplaintInvestigationDto dto = investigation.toDTO();
+        dto.setInvestigationDateVisible(newVisibility);
+        return dto;
     }
 
     // =========================================================
@@ -297,7 +363,11 @@ public class ComplaintInvestigationServiceImpl
                                         HttpStatus.NOT_FOUND,
                                         "Investigation not found"));
 
-        return investigation.toDTO();
+        ComplaintInvestigationDto dto = investigation.toDTO();
+        if (!isOfficerOrAdmin() && !Boolean.TRUE.equals(dto.getInvestigationDateVisible())) {
+            dto.setInvestigationDate(null);
+        }
+        return dto;
     }
 
     // =========================================================
@@ -315,7 +385,11 @@ public class ComplaintInvestigationServiceImpl
                                         HttpStatus.NOT_FOUND,
                                         "Investigation not found"));
 
-        return investigation.toDTO();
+        ComplaintInvestigationDto dto = investigation.toDTO();
+        if (!isOfficerOrAdmin() && !Boolean.TRUE.equals(dto.getInvestigationDateVisible())) {
+            dto.setInvestigationDate(null);
+        }
+        return dto;
     }
 
     // =========================================================

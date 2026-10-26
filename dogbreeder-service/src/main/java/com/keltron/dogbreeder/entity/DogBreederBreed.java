@@ -1,11 +1,13 @@
 package com.keltron.dogbreeder.entity;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 import com.keltron.dogbreeder.dto.DogBreederBreedDto;
 import com.keltron.utility.ValidationUtils;
 import com.keltron.utility.beans.abs.AbstractDto;
 import com.keltron.utility.jpa.entity.AbstractEntity;
+import com.keltron.utility.jpa.entity.AnimalSpecies;
 import com.keltron.utility.responses.payload.DropdownPayload;
 
 import jakarta.persistence.Column;
@@ -100,7 +102,7 @@ public class DogBreederBreed extends AbstractEntity {
 
     @Column(
             name = "age_description",
-            length = 200
+            length = 255
     )
     private String ageDescription;
 
@@ -118,6 +120,80 @@ public class DogBreederBreed extends AbstractEntity {
 
     /*
      * ============================================================
+     * ANIMAL SPECIES
+     * ============================================================
+     */
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(
+            name = "species_id",
+            referencedColumnName = "id"
+    )
+    private AnimalSpecies species;
+
+    /*
+     * ============================================================
+     * CUSTOM SPECIES NAME
+     * ============================================================
+     */
+
+    @Column(
+            name = "custom_species_name",
+            length = 120
+    )
+    private String customSpeciesName;
+
+    /*
+     * ============================================================
+     * CUSTOM BREED NAME
+     * ============================================================
+     */
+
+    @Column(
+            name = "custom_breed_name",
+            length = 120
+    )
+    private String customBreedName;
+
+    /*
+     * ============================================================
+     * DESCRIPTION
+     * ============================================================
+     */
+
+    @Column(
+            name = "description",
+            columnDefinition = "text"
+    )
+    private String description;
+
+    /*
+     * ============================================================
+     * PRICE OFFERED
+     * ============================================================
+     */
+
+    @Column(
+            name = "price_offered",
+            precision = 12,
+            scale = 2
+    )
+    private BigDecimal priceOffered;
+
+    /*
+     * ============================================================
+     * DISPLAY ORDER
+     * ============================================================
+     */
+
+    @Column(
+            name = "display_order",
+            nullable = false
+    )
+    private Integer displayOrder = 0;
+
+    /*
+     * ============================================================
      * PRE PERSIST
      * ============================================================
      */
@@ -130,61 +206,52 @@ public class DogBreederBreed extends AbstractEntity {
                         System.currentTimeMillis()
                 );
 
-        /*
-         * Created at
-         */
         if (getCreatedAt() == null) {
             setCreatedAt(now);
         }
 
-        /*
-         * Last modified at
-         */
         if (getLastModifiedAt() == null) {
             setLastModifiedAt(now);
         }
 
-        /*
-         * Created by
-         */
         if (getCreatedBy() == null
                 || getCreatedBy().isBlank()) {
-
             setCreatedBy("SYSTEM");
         }
 
-        /*
-         * Last modified by
-         */
         if (getLastModifiedBy() == null
                 || getLastModifiedBy().isBlank()) {
-
             setLastModifiedBy(
                     getCreatedBy()
             );
         }
 
-        /*
-         * Normalize gender
-         */
         if (gender != null) {
-            gender =
-                    gender.trim().toUpperCase();
+            gender = gender.trim().toUpperCase();
         }
 
-        /*
-         * Normalize breed name
-         */
         if (breedName != null) {
-            breedName =
-                    breedName.trim();
+            breedName = breedName.trim();
         }
 
-        /*
-         * Default dog count
-         */
+        if (customSpeciesName != null) {
+            customSpeciesName = customSpeciesName.trim();
+        }
+
+        if (customBreedName != null) {
+            customBreedName = customBreedName.trim();
+        }
+
+        if (description != null) {
+            description = description.trim();
+        }
+
         if (dogCount == null) {
             dogCount = 0;
+        }
+
+        if (displayOrder == null) {
+            displayOrder = 0;
         }
     }
 
@@ -197,29 +264,18 @@ public class DogBreederBreed extends AbstractEntity {
     @PreUpdate
     public void preUpdate() {
 
-        /*
-         * Last modified time
-         */
         setLastModifiedAt(
                 new Timestamp(
                         System.currentTimeMillis()
                 )
         );
 
-        /*
-         * Last modified by
-         */
         if (getLastModifiedBy() == null
                 || getLastModifiedBy().isBlank()) {
-
             setLastModifiedBy("SYSTEM");
         }
 
-        /*
-         * Created at
-         */
         if (getCreatedAt() == null) {
-
             setCreatedAt(
                     new Timestamp(
                             System.currentTimeMillis()
@@ -227,36 +283,37 @@ public class DogBreederBreed extends AbstractEntity {
             );
         }
 
-        /*
-         * Created by
-         */
         if (getCreatedBy() == null
                 || getCreatedBy().isBlank()) {
-
             setCreatedBy("SYSTEM");
         }
 
-        /*
-         * Normalize gender
-         */
         if (gender != null) {
-            gender =
-                    gender.trim().toUpperCase();
+            gender = gender.trim().toUpperCase();
         }
 
-        /*
-         * Normalize breed name
-         */
         if (breedName != null) {
-            breedName =
-                    breedName.trim();
+            breedName = breedName.trim();
         }
 
-        /*
-         * Default dog count
-         */
+        if (customSpeciesName != null) {
+            customSpeciesName = customSpeciesName.trim();
+        }
+
+        if (customBreedName != null) {
+            customBreedName = customBreedName.trim();
+        }
+
+        if (description != null) {
+            description = description.trim();
+        }
+
         if (dogCount == null) {
             dogCount = 0;
+        }
+
+        if (displayOrder == null) {
+            displayOrder = 0;
         }
     }
 
@@ -273,18 +330,11 @@ public class DogBreederBreed extends AbstractEntity {
         DogBreederBreedDto breedDto =
                 (DogBreederBreedDto) dto;
 
-        /*
-         * ID
-         */
         if (ValidationUtils.isValid(
                 breedDto.getId())) {
-
             id = breedDto.getId();
         }
 
-        /*
-         * Dog breeder detail
-         */
         if (breedDto.getDogBreederDetail() != null
                 && breedDto
                         .getDogBreederDetail()
@@ -298,63 +348,80 @@ public class DogBreederBreed extends AbstractEntity {
                     );
         }
 
-        /*
-         * Breed name
-         */
         if (ValidationUtils.isValid(
                 breedDto.getBreedName())) {
-
             breedName =
                     breedDto
                             .getBreedName()
                             .trim();
         }
 
-        /*
-         * Dog count
-         */
         if (breedDto.getDogCount() != null) {
-
-            dogCount =
-                    breedDto.getDogCount();
-
+            dogCount = breedDto.getDogCount();
         } else {
-
             dogCount = 0;
         }
 
-        /*
-         * Age description
-         */
         if (breedDto.getAgeDescription() != null) {
-
             ageDescription =
                     breedDto
                             .getAgeDescription()
                             .trim();
-
         } else {
-
             ageDescription = null;
         }
 
-        /*
-         * ========================================================
-         * IMPORTANT: GENDER
-         * ========================================================
-         */
-
         if (breedDto.getGender() != null) {
-
             gender =
                     breedDto
                             .getGender()
                             .trim()
                             .toUpperCase();
-
         } else {
-
             gender = null;
+        }
+
+        if (breedDto.getSpecies() != null
+                && breedDto.getSpecies().getId() != null) {
+            AnimalSpecies animalSpecies = new AnimalSpecies();
+            animalSpecies.setId(breedDto.getSpecies().getId());
+            species = animalSpecies;
+        } else if (breedDto.getSpeciesId() != null) {
+            AnimalSpecies animalSpecies = new AnimalSpecies();
+            animalSpecies.setId(breedDto.getSpeciesId());
+            species = animalSpecies;
+        } else {
+            species = null;
+        }
+
+        if (ValidationUtils.isValid(breedDto.getCustomSpeciesName())) {
+            customSpeciesName = breedDto.getCustomSpeciesName().trim();
+        } else {
+            customSpeciesName = null;
+        }
+
+        if (ValidationUtils.isValid(breedDto.getCustomBreedName())) {
+            customBreedName = breedDto.getCustomBreedName().trim();
+        } else {
+            customBreedName = null;
+        }
+
+        if (ValidationUtils.isValid(breedDto.getDescription())) {
+            description = breedDto.getDescription().trim();
+        } else {
+            description = null;
+        }
+
+        if (breedDto.getPriceOffered() != null) {
+            priceOffered = breedDto.getPriceOffered();
+        } else {
+            priceOffered = null;
+        }
+
+        if (breedDto.getDisplayOrder() != null) {
+            displayOrder = breedDto.getDisplayOrder();
+        } else if (displayOrder == null) {
+            displayOrder = 0;
         }
     }
 
@@ -371,47 +438,13 @@ public class DogBreederBreed extends AbstractEntity {
         DogBreederBreedDto dto =
                 new DogBreederBreedDto();
 
-        /*
-         * ID
-         */
         dto.setId(id);
+        dto.setBreedName(breedName);
+        dto.setDogCount(dogCount);
+        dto.setAgeDescription(ageDescription);
+        dto.setGender(gender);
 
-        /*
-         * Breed name
-         */
-        dto.setBreedName(
-                breedName
-        );
-
-        /*
-         * Dog count
-         */
-        dto.setDogCount(
-                dogCount
-        );
-
-        /*
-         * Age
-         */
-        dto.setAgeDescription(
-                ageDescription
-        );
-
-        /*
-         * ========================================================
-         * IMPORTANT: GENDER
-         * ========================================================
-         */
-
-        dto.setGender(
-                gender
-        );
-
-        /*
-         * Dog breeder detail
-         */
         if (dogBreederDetail != null) {
-
             DropdownPayload<Long>
                     detailPayload =
                     new DropdownPayload<>();
@@ -428,6 +461,20 @@ public class DogBreederBreed extends AbstractEntity {
                     detailPayload
             );
         }
+
+        if (species != null) {
+            DropdownPayload<Long> speciesPayload =
+                    new DropdownPayload<>();
+            speciesPayload.setId(species.getId());
+            speciesPayload.setName(species.getSpeciesName());
+            dto.setSpecies(speciesPayload);
+        }
+
+        dto.setCustomSpeciesName(customSpeciesName);
+        dto.setCustomBreedName(customBreedName);
+        dto.setDescription(description);
+        dto.setPriceOffered(priceOffered);
+        dto.setDisplayOrder(displayOrder != null ? displayOrder : 0);
 
         return dto;
     }
@@ -446,10 +493,7 @@ public class DogBreederBreed extends AbstractEntity {
                 new DropdownPayload<>();
 
         payload.setId(id);
-
-        payload.setName(
-                breedName
-        );
+        payload.setName(breedName);
 
         return payload;
     }

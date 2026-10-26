@@ -140,6 +140,10 @@ public class ComplaintInvestigation extends AbstractEntity {
         dto.setRecommendation(
                 recommendation);
 
+        if (complaint != null) {
+            dto.setInvestigationDateVisible(complaint.getInvestigationDateVisible());
+        }
+
         return dto;
     }
 
