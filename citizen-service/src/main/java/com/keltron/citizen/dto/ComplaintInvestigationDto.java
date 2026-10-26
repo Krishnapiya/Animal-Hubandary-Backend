@@ -34,6 +34,8 @@ public class ComplaintInvestigationDto extends AbstractDto {
 
     private String recommendation;
 
+    private Boolean investigationDateVisible;
+
     @Override
     public ComplaintInvestigation toEntity() {
 

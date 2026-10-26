@@ -46,7 +46,7 @@ public class DogBreederRegistrationInspectionServiceImpl {
     @Autowired
     private DogBreederNotificationServiceImpl notificationService;
 
-    @Value("${application.inspection.upload-dir}")
+    @Value("${application.inspection.upload-dir:/home/user/dogbreeder/uploads/inspection}")
     private String inspectionUploadDir;
 
     /**
@@ -90,10 +90,12 @@ public class DogBreederRegistrationInspectionServiceImpl {
         Long recipientUserId =
                 getApplicantUserId(application);
 
+        boolean isVisible = Boolean.TRUE.equals(savedInspection.getInspectionDateVisible());
+
         if (recipientUserId != null) {
 
             String inspectionDateDetails =
-                    dto.getInspectionDate() != null
+                    isVisible && dto.getInspectionDate() != null
                             ? dto.getInspectionDate().toString()
                             : null;
 
@@ -103,6 +105,25 @@ public class DogBreederRegistrationInspectionServiceImpl {
                     recipientUserId,
                     inspectionDateDetails
             );
+        }
+
+        if (!isVisible) {
+            try {
+                Long cvoUserId = notificationService.getLoggedInUserId();
+                if (cvoUserId != null) {
+                    String appNum = application.getApplicationNumber() != null ? application.getApplicationNumber() : "";
+                    notificationService.createNotification(
+                            cvoUserId,
+                            "DOG_BREEDER",
+                            application.getId(),
+                            "Inspection Scheduled (Surprise Visit)",
+                            "Inspection for application " + appNum + " has been scheduled for " + (dto.getInspectionDate() != null ? dto.getInspectionDate().toString() : "") + " (hidden from applicant).",
+                            "INFO"
+                    );
+                }
+            } catch (Exception ex) {
+                // Ignore if security context has no user
+            }
         }
 
         return savedInspection;
@@ -206,6 +227,52 @@ public class DogBreederRegistrationInspectionServiceImpl {
     }
 
     /**
+     * Toggle inspection date visibility for applicant
+     */
+    public DogBreederRegistrationInspection toggleVisibility(
+            Long applicationId,
+            Boolean visible) {
+
+        DogBreederRegistrationInspection inspection =
+                repository.findTopByApplication_IdOrderByIdDesc(applicationId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Inspection not found for application: " + applicationId
+                                )
+                        );
+
+        boolean newVisibility = (visible != null)
+                ? visible
+                : !Boolean.TRUE.equals(inspection.getInspectionDateVisible());
+
+        inspection.setInspectionDateVisible(newVisibility);
+        DogBreederRegistrationInspection saved = repository.save(inspection);
+
+        if (newVisibility) {
+            DogBreederRegistrationApplication app = inspection.getApplication();
+            if (app != null) {
+                Long recipientUserId = getApplicantUserId(app);
+                if (recipientUserId != null) {
+                    String dateStr = inspection.getInspectionDate() != null
+                            ? inspection.getInspectionDate().toString()
+                            : "";
+                    String appNum = app.getApplicationNumber() != null ? app.getApplicationNumber() : "";
+                    notificationService.createNotification(
+                            recipientUserId,
+                            "DOG_BREEDER",
+                            app.getId(),
+                            "Inspection Date Revealed",
+                            "The inspection date for your application (" + appNum + ") is scheduled on " + dateStr + ".",
+                            "INFO"
+                    );
+                }
+            }
+        }
+
+        return saved;
+    }
+
+    /**
      * Upload Inspection Report
      */
     public DogBreederRegistrationInspection uploadInspectionReport(
@@ -294,10 +361,12 @@ public class DogBreederRegistrationInspectionServiceImpl {
             /*
              * Create upload directory
              */
-            Path reportDirectory =
-                    Paths.get(inspectionUploadDir)
-                            .toAbsolutePath()
-                            .normalize();
+            Path reportDirectory;
+            if (inspectionUploadDir != null && !inspectionUploadDir.isBlank() && !inspectionUploadDir.contains("/home/keltron")) {
+                reportDirectory = Paths.get(inspectionUploadDir).toAbsolutePath().normalize();
+            } else {
+                reportDirectory = Paths.get(System.getProperty("user.home"), "dogbreeder", "uploads", "inspection").toAbsolutePath().normalize();
+            }
 
             log.info(
                     "Inspection report directory: {}",

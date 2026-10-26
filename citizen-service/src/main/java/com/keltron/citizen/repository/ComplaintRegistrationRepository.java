@@ -1,5 +1,6 @@
 package com.keltron.citizen.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.keltron.citizen.entity.ComplaintRegistration;
@@ -12,4 +13,9 @@ public interface ComplaintRegistrationRepository
 
     Optional<ComplaintRegistration> findByComplaintNumber(
             String complaintNumber);
+
+    List<ComplaintRegistration> findByCitizenUserIdOrderByIdDesc(
+            Long citizenUserId);
+
+    List<ComplaintRegistration> findAllByOrderByIdDesc();
 }

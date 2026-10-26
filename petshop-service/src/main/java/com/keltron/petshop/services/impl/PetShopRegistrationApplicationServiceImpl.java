@@ -1,5 +1,11 @@
 package com.keltron.petshop.services.impl;
 
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.stream.Collectors;
+import com.keltron.petshop.repository.DocumentTypeRepository;
+import com.keltron.utility.jpa.entity.DocumentType;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import com.keltron.petshop.repository.PetShopOfficeRepository;
 import com.keltron.utility.jpa.entity.Office;
@@ -48,6 +54,8 @@ public class PetShopRegistrationApplicationServiceImpl
                 PetShopRegistrationApplication> {
 	@Autowired
 	private PetShopApplicationDocumentRepository documentRepository;
+	@Autowired
+	private DocumentTypeRepository documentTypeRepository;
 	
 
     @Autowired
@@ -86,6 +94,43 @@ public class PetShopRegistrationApplicationServiceImpl
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Application not found"));
+
+        // Mandatory documents validation before submission
+        List<DocumentType> mandatoryDocTypes =
+                documentTypeRepository.findByEntityScopeIgnoreCaseAndMandatoryTrueAndActiveTrue("PET_SHOP");
+
+        List<PetShopApplicationDocument> uploadedDocs =
+                documentRepository.findByApplication_Id(id);
+
+        Set<Long> uploadedDocTypeIds = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getId())
+                .collect(Collectors.toSet());
+
+        Set<String> uploadedCodes = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getDocumentType().getCode() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getCode().toUpperCase())
+                .collect(Collectors.toSet());
+
+        List<String> missingDocNames = new ArrayList<>();
+        for (DocumentType mt : mandatoryDocTypes) {
+            if (!uploadedDocTypeIds.contains(mt.getId()) && !uploadedCodes.contains(mt.getCode().toUpperCase())) {
+                missingDocNames.add(mt.getName());
+            }
+        }
+
+        if (!uploadedCodes.contains("PAN_CARD") && !uploadedDocTypeIds.contains(31L)) {
+            if (!missingDocNames.contains("PAN Card")) {
+                missingDocNames.add("PAN Card");
+            }
+        }
+
+        if (!missingDocNames.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Mandatory document(s) missing: " + String.join(", ", missingDocNames));
+        }
+
 
         PetShopDetail detail =
                 detailRepository
@@ -142,6 +187,7 @@ public class PetShopRegistrationApplicationServiceImpl
 
         dto.setShopName(detail.getShopName());
         dto.setOwnerName(detail.getOwnerName());
+        dto.setPanNumber(detail.getPanNumber());
         
         dto.setFatherOrHusbandName(detail.getFatherOrHusbandName());
         dto.setAge(detail.getAge());
@@ -260,6 +306,43 @@ public class PetShopRegistrationApplicationServiceImpl
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Application not found"));
+
+        // Mandatory documents validation before submission
+        List<DocumentType> mandatoryDocTypes =
+                documentTypeRepository.findByEntityScopeIgnoreCaseAndMandatoryTrueAndActiveTrue("PET_SHOP");
+
+        List<PetShopApplicationDocument> uploadedDocs =
+                documentRepository.findByApplication_Id(id);
+
+        Set<Long> uploadedDocTypeIds = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getId())
+                .collect(Collectors.toSet());
+
+        Set<String> uploadedCodes = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getDocumentType().getCode() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getCode().toUpperCase())
+                .collect(Collectors.toSet());
+
+        List<String> missingDocNames = new ArrayList<>();
+        for (DocumentType mt : mandatoryDocTypes) {
+            if (!uploadedDocTypeIds.contains(mt.getId()) && !uploadedCodes.contains(mt.getCode().toUpperCase())) {
+                missingDocNames.add(mt.getName());
+            }
+        }
+
+        if (!uploadedCodes.contains("PAN_CARD") && !uploadedDocTypeIds.contains(31L)) {
+            if (!missingDocNames.contains("PAN Card")) {
+                missingDocNames.add("PAN Card");
+            }
+        }
+
+        if (!missingDocNames.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Mandatory document(s) missing: " + String.join(", ", missingDocNames));
+        }
+
         
         ApplicationStatus fromStatus = application.getStatus() == null
                 ? null
@@ -368,6 +451,43 @@ public class PetShopRegistrationApplicationServiceImpl
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Application not found"));
+
+        // Mandatory documents validation before submission
+        List<DocumentType> mandatoryDocTypes =
+                documentTypeRepository.findByEntityScopeIgnoreCaseAndMandatoryTrueAndActiveTrue("PET_SHOP");
+
+        List<PetShopApplicationDocument> uploadedDocs =
+                documentRepository.findByApplication_Id(id);
+
+        Set<Long> uploadedDocTypeIds = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getId())
+                .collect(Collectors.toSet());
+
+        Set<String> uploadedCodes = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getDocumentType().getCode() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getCode().toUpperCase())
+                .collect(Collectors.toSet());
+
+        List<String> missingDocNames = new ArrayList<>();
+        for (DocumentType mt : mandatoryDocTypes) {
+            if (!uploadedDocTypeIds.contains(mt.getId()) && !uploadedCodes.contains(mt.getCode().toUpperCase())) {
+                missingDocNames.add(mt.getName());
+            }
+        }
+
+        if (!uploadedCodes.contains("PAN_CARD") && !uploadedDocTypeIds.contains(31L)) {
+            if (!missingDocNames.contains("PAN Card")) {
+                missingDocNames.add("PAN Card");
+            }
+        }
+
+        if (!missingDocNames.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Mandatory document(s) missing: " + String.join(", ", missingDocNames));
+        }
+
         
         ApplicationStatus fromStatus = application.getStatus() == null
                 ? null
@@ -514,6 +634,43 @@ public class PetShopRegistrationApplicationServiceImpl
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Application not found"));
+
+        // Mandatory documents validation before submission
+        List<DocumentType> mandatoryDocTypes =
+                documentTypeRepository.findByEntityScopeIgnoreCaseAndMandatoryTrueAndActiveTrue("PET_SHOP");
+
+        List<PetShopApplicationDocument> uploadedDocs =
+                documentRepository.findByApplication_Id(id);
+
+        Set<Long> uploadedDocTypeIds = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getId())
+                .collect(Collectors.toSet());
+
+        Set<String> uploadedCodes = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getDocumentType().getCode() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getCode().toUpperCase())
+                .collect(Collectors.toSet());
+
+        List<String> missingDocNames = new ArrayList<>();
+        for (DocumentType mt : mandatoryDocTypes) {
+            if (!uploadedDocTypeIds.contains(mt.getId()) && !uploadedCodes.contains(mt.getCode().toUpperCase())) {
+                missingDocNames.add(mt.getName());
+            }
+        }
+
+        if (!uploadedCodes.contains("PAN_CARD") && !uploadedDocTypeIds.contains(31L)) {
+            if (!missingDocNames.contains("PAN Card")) {
+                missingDocNames.add("PAN Card");
+            }
+        }
+
+        if (!missingDocNames.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Mandatory document(s) missing: " + String.join(", ", missingDocNames));
+        }
+
         
         ApplicationStatus fromStatus = application.getStatus() == null
                 ? null
@@ -558,6 +715,43 @@ public class PetShopRegistrationApplicationServiceImpl
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Application not found"));
+
+        // Mandatory documents validation before submission
+        List<DocumentType> mandatoryDocTypes =
+                documentTypeRepository.findByEntityScopeIgnoreCaseAndMandatoryTrueAndActiveTrue("PET_SHOP");
+
+        List<PetShopApplicationDocument> uploadedDocs =
+                documentRepository.findByApplication_Id(id);
+
+        Set<Long> uploadedDocTypeIds = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getId())
+                .collect(Collectors.toSet());
+
+        Set<String> uploadedCodes = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getDocumentType().getCode() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getCode().toUpperCase())
+                .collect(Collectors.toSet());
+
+        List<String> missingDocNames = new ArrayList<>();
+        for (DocumentType mt : mandatoryDocTypes) {
+            if (!uploadedDocTypeIds.contains(mt.getId()) && !uploadedCodes.contains(mt.getCode().toUpperCase())) {
+                missingDocNames.add(mt.getName());
+            }
+        }
+
+        if (!uploadedCodes.contains("PAN_CARD") && !uploadedDocTypeIds.contains(31L)) {
+            if (!missingDocNames.contains("PAN Card")) {
+                missingDocNames.add("PAN Card");
+            }
+        }
+
+        if (!missingDocNames.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Mandatory document(s) missing: " + String.join(", ", missingDocNames));
+        }
+
         
         ApplicationStatus fromStatus = application.getStatus() == null
                 ? null

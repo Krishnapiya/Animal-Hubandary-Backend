@@ -15,6 +15,7 @@ public class PetShopRegistrationDraftDto {
     private String districtName;
     private String shopName;
     private String ownerName;
+    private String panNumber;
     private String shopAddressLine1;
     private String shopAddressLine2;
     private String shopCity;

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.keltron.dogbreeder.dto.DogBreederRegistrationInspectionDto;
+import com.keltron.dogbreeder.entity.DogBreederRegistrationInspection;
 import com.keltron.dogbreeder.services.impl.DogBreederRegistrationInspectionServiceImpl;
 import com.keltron.utility.ResponseBuilder;
 import com.keltron.utility.requests.Request;
@@ -30,6 +31,16 @@ public class DogBreederRegistrationInspectionController extends AbstractControll
 
     @Autowired
     private DogBreederRegistrationInspectionServiceImpl serviceImpl;
+
+    private boolean isOfficerOrAdmin() {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        return auth.getAuthorities().stream().anyMatch(a -> {
+            String r = a.getAuthority().toUpperCase();
+            return r.contains("ADMIN") || r.contains("OFFICER") || r.contains("CVO");
+        });
+    }
 
     /**
      * Save Inspection Schedule
@@ -88,28 +99,46 @@ public class DogBreederRegistrationInspectionController extends AbstractControll
     @GetMapping("/view/{id}")
     public ResponseEntity<AbstractResponse> view(
             @PathVariable Long id) {
-
+        DogBreederRegistrationInspection inspection = serviceImpl.get(id);
+        DogBreederRegistrationInspectionDto dto = inspection != null ? inspection.toDTO() : null;
+        if (dto != null && !isOfficerOrAdmin() && !Boolean.TRUE.equals(dto.getInspectionDateVisible())) {
+            dto.setInspectionDate(null);
+        }
         return new ResponseBuilder()
-                .withData(
-                        serviceImpl.get(id).toDTO())
+                .withData(dto)
                 .build();
     }
 
     /**
      * Get Inspection By Application Id
      */
-    /**
-     * Get Inspection By Application Id
-     */
     @GetMapping("/application/{applicationId}")
     public ResponseEntity<AbstractResponse> getByApplication(
             @PathVariable Long applicationId) {
+        DogBreederRegistrationInspection inspection = serviceImpl.getByApplication(applicationId);
+        DogBreederRegistrationInspectionDto dto = inspection != null ? inspection.toDTO() : null;
+        if (dto != null && !isOfficerOrAdmin() && !Boolean.TRUE.equals(dto.getInspectionDateVisible())) {
+            dto.setInspectionDate(null);
+        }
+        return new ResponseBuilder()
+                .withData(dto)
+                .build();
+    }
+
+    /**
+     * Toggle Inspection Date Visibility
+     */
+    @PatchMapping("/toggle-visibility/{applicationId}")
+    public ResponseEntity<AbstractResponse> toggleVisibility(
+            @PathVariable Long applicationId,
+            @RequestParam(name = "visible", required = false) Boolean visible) {
 
         return new ResponseBuilder()
                 .withData(
-                        serviceImpl
-                        .getByApplication(applicationId)
-                        .toDTO())
+                        serviceImpl.toggleVisibility(
+                                applicationId,
+                                visible)
+                                .toDTO())
                 .build();
     }
 

@@ -1,5 +1,7 @@
 package com.keltron.dogbreeder.dto;
 
+import java.util.regex.Pattern;
+
 import org.springframework.http.HttpMethod;
 
 import com.keltron.dogbreeder.entity.DogBreederDetail;
@@ -18,6 +20,7 @@ public class DogBreederDetailDto extends AbstractDto {
     private Long id;
     private Long applicationId;
     private String breederName;
+    private String panNumber;
     private String addressLine1;
     private String addressLine2;
     private String city;
@@ -27,6 +30,9 @@ public class DogBreederDetailDto extends AbstractDto {
     private String facilityDetails;
     private Integer totalDogsCount;
 
+    private static final Pattern PAN_PATTERN =
+            Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
+
     @Override
     public DogBreederDetail toEntity() {
 
@@ -35,6 +41,7 @@ public class DogBreederDetailDto extends AbstractDto {
         entity.setId(id);
         entity.setApplicationId(applicationId);
         entity.setBreederName(breederName);
+        entity.setPanNumber(panNumber);
         entity.setAddressLine1(addressLine1);
         entity.setAddressLine2(addressLine2);
         entity.setCity(city);

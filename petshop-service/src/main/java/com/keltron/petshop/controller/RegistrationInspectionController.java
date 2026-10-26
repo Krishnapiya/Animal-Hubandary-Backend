@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.keltron.petshop.dto.RegistrationInspectionDto;
+import com.keltron.petshop.entity.RegistrationInspection;
 import com.keltron.petshop.services.impl.RegistrationInspectionServiceImpl;
 import com.keltron.utility.ResponseBuilder;
 import com.keltron.utility.requests.Request;
@@ -23,12 +24,24 @@ import com.keltron.utility.web.controller.abs.AbstractController;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import java.io.IOException;
 @RestController
 @RequestMapping("petshop/auth/registration-inspection")
 public class RegistrationInspectionController extends AbstractController {
 
     @Autowired
     private RegistrationInspectionServiceImpl serviceImpl;
+
+    private boolean isOfficerOrAdmin() {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        return auth.getAuthorities().stream().anyMatch(a -> {
+            String r = a.getAuthority().toUpperCase();
+            return r.contains("ADMIN") || r.contains("OFFICER") || r.contains("CVO");
+        });
+    }
 
     /**
      * Save Inspection Schedule
@@ -87,10 +100,13 @@ public class RegistrationInspectionController extends AbstractController {
     @GetMapping("/view/{id}")
     public ResponseEntity<AbstractResponse> view(
             @PathVariable Long id) {
-
+        RegistrationInspection inspection = serviceImpl.get(id);
+        RegistrationInspectionDto dto = inspection != null ? inspection.toDTO() : null;
+        if (dto != null && !isOfficerOrAdmin() && !Boolean.TRUE.equals(dto.getInspectionDateVisible())) {
+            dto.setInspectionDate(null);
+        }
         return new ResponseBuilder()
-                .withData(
-                        serviceImpl.get(id).toDTO())
+                .withData(dto)
                 .build();
     }
 
@@ -100,10 +116,30 @@ public class RegistrationInspectionController extends AbstractController {
     @GetMapping("/application/{applicationId}")
     public ResponseEntity<AbstractResponse> getByApplication(
             @PathVariable Long applicationId) {
+        RegistrationInspection inspection = serviceImpl.getByApplication(applicationId);
+        RegistrationInspectionDto dto = inspection != null ? inspection.toDTO() : null;
+        if (dto != null && !isOfficerOrAdmin() && !Boolean.TRUE.equals(dto.getInspectionDateVisible())) {
+            dto.setInspectionDate(null);
+        }
+        return new ResponseBuilder()
+                .withData(dto)
+                .build();
+    }
+
+    /**
+     * Toggle Inspection Date Visibility
+     */
+    @PatchMapping("/toggle-visibility/{applicationId}")
+    public ResponseEntity<AbstractResponse> toggleVisibility(
+            @PathVariable Long applicationId,
+            @RequestParam(name = "visible", required = false) Boolean visible) {
 
         return new ResponseBuilder()
                 .withData(
-                        serviceImpl.getByApplication(applicationId))
+                        serviceImpl.toggleVisibility(
+                                applicationId,
+                                visible)
+                                .toDTO())
                 .build();
     }
 
@@ -149,4 +185,10 @@ public class RegistrationInspectionController extends AbstractController {
                 .build();
     }
 
+    @GetMapping("/view-report/{applicationId}")
+    public ResponseEntity<Resource> viewReport(
+            @PathVariable Long applicationId) throws IOException {
+
+        return serviceImpl.viewReport(applicationId);
+    }
 }
