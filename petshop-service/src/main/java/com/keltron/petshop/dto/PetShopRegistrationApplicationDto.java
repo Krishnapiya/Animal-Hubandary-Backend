@@ -36,6 +36,9 @@ public class PetShopRegistrationApplicationDto extends AbstractDto {
     private LocalDateTime forwardedToCvoAt;
     private DropdownPayload<Long> status;
     private DropdownPayload<Integer> district;
+    private String certificateNumber;
+    private Boolean hasCertificate;
+    private Long certificateId;
 
     @Override
     public PetShopRegistrationApplication toEntity() {

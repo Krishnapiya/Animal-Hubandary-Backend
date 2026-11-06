@@ -64,5 +64,9 @@ public class PetShopRegistrationViewDto {
     private String affidavitDeponentName;
     
     private List<PetShopApplicationDocumentDto> supportingDocuments;
-    
+
+    private String certificateNumber;
+    private Boolean hasCertificate;
+    private Long certificateId;
+    private LocalDate certificateIssueDate;
 }

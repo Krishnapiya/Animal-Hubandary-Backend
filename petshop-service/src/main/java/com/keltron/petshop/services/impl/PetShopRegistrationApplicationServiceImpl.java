@@ -1,6 +1,7 @@
 package com.keltron.petshop.services.impl;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.keltron.petshop.repository.DocumentTypeRepository;
@@ -29,6 +30,8 @@ import com.keltron.petshop.entity.PetShopFacility;
 import com.keltron.petshop.entity.PetShopProposedAnimal;
 
 import com.keltron.petshop.repository.ApplicationDeclarationRepository;
+import com.keltron.petshop.entity.PetShopCertificate;
+import com.keltron.petshop.repository.PetShopCertificateRepository;
 import com.keltron.petshop.repository.ApplicationStatusMasterRepository;
 import com.keltron.petshop.repository.PetShopFacilityRepository;
 import com.keltron.petshop.repository.PetShopProposedAnimalRepository;
@@ -57,6 +60,9 @@ public class PetShopRegistrationApplicationServiceImpl
 	@Autowired
 	private DocumentTypeRepository documentTypeRepository;
 	
+
+    @Autowired
+    private PetShopCertificateRepository certificateRepository;
 
     @Autowired
     private PetShopDetailRepository detailRepository;
@@ -265,6 +271,13 @@ public class PetShopRegistrationApplicationServiceImpl
 
         dto.setSupportingDocuments(documents);
 
+        certificateRepository.findByApplication_Id(id).ifPresent(cert -> {
+            dto.setCertificateNumber(cert.getCertificateNumber());
+            dto.setHasCertificate(true);
+            dto.setCertificateId(cert.getId());
+            dto.setCertificateIssueDate(cert.getIssueDate());
+        });
+
         return dto;
     }
     @Transactional(readOnly = true)
@@ -293,9 +306,12 @@ public class PetShopRegistrationApplicationServiceImpl
                     .toList();
         }
 
-        return applications.stream()
+        List<PetShopRegistrationApplicationDto> dtos = applications.stream()
                 .map(PetShopRegistrationApplication::toDTO)
                 .toList();
+
+        enrichCertificateInfo(dtos);
+        return dtos;
     }
     @Transactional
     public PetShopRegistrationApplicationDto forwardApplication(Long id) {
@@ -428,7 +444,7 @@ public class PetShopRegistrationApplicationServiceImpl
                     .toList();
         }
 
-        return applications.stream()
+        List<PetShopRegistrationApplicationDto> dtos = applications.stream()
                 .map(application -> {
 
                     PetShopRegistrationApplicationDto dto =
@@ -441,6 +457,27 @@ public class PetShopRegistrationApplicationServiceImpl
                     return dto;
                 })
                 .toList();
+
+        enrichCertificateInfo(dtos);
+        return dtos;
+    }
+
+    private void enrichCertificateInfo(List<PetShopRegistrationApplicationDto> dtos) {
+        if (dtos == null || dtos.isEmpty()) return;
+        List<Long> appIds = dtos.stream().map(PetShopRegistrationApplicationDto::getId).toList();
+        List<PetShopCertificate> certs = certificateRepository.findByApplication_IdIn(appIds);
+        Map<Long, PetShopCertificate> certMap = certs.stream()
+                .collect(Collectors.toMap(c -> c.getApplication().getId(), c -> c, (a, b) -> a));
+        for (PetShopRegistrationApplicationDto dto : dtos) {
+            PetShopCertificate cert = certMap.get(dto.getId());
+            if (cert != null) {
+                dto.setCertificateNumber(cert.getCertificateNumber());
+                dto.setHasCertificate(true);
+                dto.setCertificateId(cert.getId());
+            } else {
+                dto.setHasCertificate(false);
+            }
+        }
     }
     @Transactional
     public PetShopRegistrationApplicationDto submitApplication(Long id) {
@@ -621,9 +658,12 @@ public class PetShopRegistrationApplicationServiceImpl
 
         System.out.println("Applications Found = " + applications.size());
 
-        return applications.stream()
+        List<PetShopRegistrationApplicationDto> dtos = applications.stream()
                 .map(PetShopRegistrationApplication::toDTO)
                 .toList();
+
+        enrichCertificateInfo(dtos);
+        return dtos;
     }
     @Transactional
     public PetShopRegistrationApplicationDto approveApplication(Long id) {

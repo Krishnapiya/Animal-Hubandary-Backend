@@ -26,12 +26,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 import java.io.IOException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ContentDisposition;
+import com.keltron.petshop.services.impl.PetShopRegistrationPdfService;
 @RestController
 @RequestMapping("petshop/auth/registration-inspection")
 public class RegistrationInspectionController extends AbstractController {
 
     @Autowired
     private RegistrationInspectionServiceImpl serviceImpl;
+
+    @Autowired
+    private PetShopRegistrationPdfService pdfService;
 
     private boolean isOfficerOrAdmin() {
         org.springframework.security.core.Authentication auth =
@@ -190,5 +197,25 @@ public class RegistrationInspectionController extends AbstractController {
             @PathVariable Long applicationId) throws IOException {
 
         return serviceImpl.viewReport(applicationId);
+    }
+
+    /**
+     * Download blank 3-page Pet Shop Inspection Report format PDF
+     */
+    @GetMapping("/download-report-format")
+    public ResponseEntity<byte[]> downloadReportFormat() {
+        byte[] pdfBytes = pdfService.generateInspectionReportFormatPdf();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                ContentDisposition
+                        .attachment()
+                        .filename("Pet_Shop_Inspection_Report_Format.pdf")
+                        .build());
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
     }
 }
