@@ -69,6 +69,9 @@ public class ComplaintRegistration extends AbstractEntity {
     @JoinColumn(name = "status_id")
     private ApplicationStatusMaster status;
 
+    @Column(name = "investigation_date_visible")
+    private Boolean investigationDateVisible = false;
+
     @Override
     public <K extends AbstractDto> void copyFromDTO(K dto) {
 
@@ -108,6 +111,10 @@ public class ComplaintRegistration extends AbstractEntity {
         if (ValidationUtils.isValid(complaintDto.getStatusId())) {
             this.status = new ApplicationStatusMaster(complaintDto.getStatusId());
         }
+
+        if (complaintDto.getInvestigationDateVisible() != null) {
+            this.investigationDateVisible = complaintDto.getInvestigationDateVisible();
+        }
     }
 
     @Override
@@ -126,6 +133,7 @@ public class ComplaintRegistration extends AbstractEntity {
         dto.setPhotoPath(photoPath);
         dto.setVideoPath(videoPath);
         dto.setDocumentPath(documentPath);
+        dto.setInvestigationDateVisible(investigationDateVisible);
         if (status != null) {
             dto.setStatusId(status.getId());
             dto.setStatus(status.toDropDownPayload());

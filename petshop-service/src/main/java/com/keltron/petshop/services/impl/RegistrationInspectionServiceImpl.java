@@ -23,6 +23,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 import com.keltron.utility.constants.ApplicationStatus;
 import java.time.format.DateTimeFormatter;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.MediaType;
 @Service
 @Transactional
 public class RegistrationInspectionServiceImpl {
@@ -74,26 +80,54 @@ public class RegistrationInspectionServiceImpl {
 				"SYSTEM", "Inspection scheduled", "SCHEDULE_INSPECTION");
 
 		String inspectionDate =
-		        inspection.getInspectionDate()
-		                  .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+		        inspection.getInspectionDate() != null
+		                ? inspection.getInspectionDate().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+		                : "";
 
-		String message =
-		        "Your inspection has been scheduled by the Chief Veterinary Officer.\n\n"
-		      + "Inspection Date : " + inspectionDate;
+		boolean isVisible = Boolean.TRUE.equals(savedInspection.getInspectionDateVisible());
 
-		if (inspection.getInspectionRemarks() != null
-		        && !inspection.getInspectionRemarks().isBlank()) {
-
-		    message += "\nRemarks : " + inspection.getInspectionRemarks();
+		String applicantMessage;
+		if (isVisible) {
+			applicantMessage =
+			        "Your inspection has been scheduled by the Chief Veterinary Officer.\n\n"
+			      + "Inspection Date : " + inspectionDate;
+			if (inspection.getInspectionRemarks() != null
+			        && !inspection.getInspectionRemarks().isBlank()) {
+			    applicantMessage += "\nRemarks : " + inspection.getInspectionRemarks();
+			}
+		} else {
+			applicantMessage =
+			        "Your inspection has been scheduled by the Chief Veterinary Officer. Details will be made available by the department.";
 		}
 
-		notificationService.createNotification(
-		        application.getApplicantUserId(),
-		        "PET_SHOP",
-		        application.getId(),
-		        "Inspection Scheduled",
-		        message,
-		        "INFO");
+		if (application.getApplicantUserId() != null) {
+			notificationService.createNotification(
+			        application.getApplicantUserId(),
+			        "PET_SHOP",
+			        application.getId(),
+			        "Inspection Scheduled",
+			        applicantMessage,
+			        "INFO");
+		}
+
+		if (!isVisible) {
+			try {
+				Long cvoUserId = notificationService.getLoggedInUserId();
+				if (cvoUserId != null) {
+					String appNum = application.getApplicationNumber() != null ? application.getApplicationNumber() : "";
+					notificationService.createNotification(
+					        cvoUserId,
+					        "PET_SHOP",
+					        application.getId(),
+					        "Inspection Scheduled (Surprise Visit)",
+					        "Inspection for application " + appNum + " has been scheduled for " + inspectionDate + " (hidden from applicant).",
+					        "INFO");
+				}
+			} catch (Exception ex) {
+				// Ignore if security context has no user
+			}
+		}
+
 		return savedInspection;
 	}
 
@@ -133,7 +167,7 @@ public class RegistrationInspectionServiceImpl {
 	@Transactional(readOnly = true)
 	public RegistrationInspection getByApplication(Long applicationId) {
 
-		return repository.findByApplication_Id(applicationId).orElse(null);
+		return repository.findFirstByApplication_IdOrderByIdDesc(applicationId).orElse(null);
 	}
 
 	/**
@@ -158,19 +192,61 @@ public class RegistrationInspectionServiceImpl {
 		return true;
 	}
 
+	/**
+	 * Toggle inspection date visibility for applicant
+	 */
+	public RegistrationInspection toggleVisibility(Long applicationId, Boolean visible) {
+		RegistrationInspection inspection = repository
+				.findFirstByApplication_IdOrderByIdDesc(applicationId)
+				.orElseThrow(() -> new RuntimeException("Inspection not found for application: " + applicationId));
+
+		boolean newVisibility = (visible != null) ? visible : !Boolean.TRUE.equals(inspection.getInspectionDateVisible());
+		inspection.setInspectionDateVisible(newVisibility);
+		RegistrationInspection saved = repository.save(inspection);
+
+		if (newVisibility) {
+			PetShopRegistrationApplication app = inspection.getApplication();
+			if (app != null && app.getApplicantUserId() != null) {
+				String dateStr = inspection.getInspectionDate() != null
+						? inspection.getInspectionDate().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+						: "";
+				String appNum = app.getApplicationNumber() != null ? app.getApplicationNumber() : "";
+				notificationService.createNotification(
+						app.getApplicantUserId(),
+						"PET_SHOP",
+						app.getId(),
+						"Inspection Date Revealed",
+						"The inspection date for your application (" + appNum + ") is scheduled on " + dateStr + ".",
+						"INFO");
+			}
+		}
+
+		return saved;
+	}
+
 	public RegistrationInspection uploadInspectionReport(Long applicationId, MultipartFile reportFile, String remarks,
 			String recommendation) {
 
-		RegistrationInspection inspection = repository.findByApplication_Id(applicationId)
+		RegistrationInspection inspection = repository
+				.findFirstByApplication_IdOrderByIdDesc(applicationId)
 				.orElseThrow(() -> new RuntimeException("Inspection not found."));
 
 		try {
 
-			Path reportDirectory = Paths.get(inspectionUploadDir);
+			Path reportDirectory;
+			if (inspectionUploadDir != null && !inspectionUploadDir.isBlank() && !inspectionUploadDir.contains("/home/keltron")) {
+				reportDirectory = Paths.get(inspectionUploadDir);
+			} else {
+				reportDirectory = Paths.get(System.getProperty("user.home"), "Documents", "uploads", "Reports");
+			}
 
-			Files.createDirectories(reportDirectory);
+			if (!Files.exists(reportDirectory)) {
+				Files.createDirectories(reportDirectory);
+			}
 
-			String fileName = System.currentTimeMillis() + "_" + reportFile.getOriginalFilename();
+			String rawName = reportFile.getOriginalFilename() != null ? reportFile.getOriginalFilename() : "report.pdf";
+			String cleanName = Paths.get(rawName).getFileName().toString();
+			String fileName = System.currentTimeMillis() + "_" + cleanName;
 
 			Path filePath = reportDirectory.resolve(fileName);
 
@@ -209,5 +285,72 @@ public class RegistrationInspectionServiceImpl {
 				recommendation.equalsIgnoreCase("APPROVED") ? "VERIFY" : "REJECT");
 
 		return repository.save(inspection);
+	}
+
+	@Transactional(readOnly = true)
+	public ResponseEntity<Resource> viewReport(Long applicationId) throws IOException {
+		RegistrationInspection inspection = repository
+				.findFirstByApplication_IdOrderByIdDesc(applicationId)
+				.orElseThrow(() -> new RuntimeException("Inspection not found."));
+
+		String reportPath = inspection.getInspectionReport();
+		if (reportPath == null || reportPath.isBlank()) {
+			throw new RuntimeException("Inspection report not found.");
+		}
+
+		Path path = Paths.get(reportPath);
+		if (!Files.exists(path)) {
+			String fileName = path.getFileName().toString();
+			String decodedName = fileName;
+			try {
+				decodedName = java.net.URLDecoder.decode(fileName, java.nio.charset.StandardCharsets.UTF_8);
+			} catch (Exception ignored) {}
+
+			java.util.List<Path> candidates = java.util.List.of(
+				inspectionUploadDir != null && !inspectionUploadDir.isBlank() ? Paths.get(inspectionUploadDir).resolve(fileName) : path,
+				inspectionUploadDir != null && !inspectionUploadDir.isBlank() ? Paths.get(inspectionUploadDir).resolve(decodedName) : path,
+				Paths.get("/home/user/Documents/uploads/Reports").resolve(fileName),
+				Paths.get("/home/user/Documents/uploads/Reports").resolve(decodedName),
+				Paths.get(System.getProperty("user.home"), "Documents", "uploads", "Reports").resolve(fileName),
+				Paths.get(System.getProperty("user.home"), "Documents", "uploads", "Reports").resolve(decodedName),
+				Paths.get("/home/user/Documents/uploads/documents").resolve(fileName),
+				Paths.get("/home/user/Documents/uploads/documents").resolve(decodedName),
+				Paths.get("/home/keltron/Documents/uploads/Reports").resolve(fileName),
+				Paths.get("/home/keltron/Documents/uploads/Reports").resolve(decodedName)
+			);
+
+			for (Path candidate : candidates) {
+				if (Files.exists(candidate)) {
+					path = candidate;
+					break;
+				}
+			}
+		}
+
+		if (!Files.exists(path)) {
+			throw new RuntimeException("Report file does not exist on server: " + reportPath);
+		}
+
+		Resource resource = new UrlResource(path.toUri());
+		String contentType = Files.probeContentType(path);
+		if (contentType == null || contentType.isBlank()) {
+			String lower = path.getFileName().toString().toLowerCase();
+			if (lower.endsWith(".pdf")) {
+				contentType = "application/pdf";
+			} else if (lower.endsWith(".png")) {
+				contentType = "image/png";
+			} else if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+				contentType = "image/jpeg";
+			} else {
+				contentType = "application/octet-stream";
+			}
+		}
+
+		String displayName = path.getFileName().toString();
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION,
+						ContentDisposition.inline().filename(displayName).build().toString())
+				.contentType(MediaType.parseMediaType(contentType))
+				.body(resource);
 	}
 }

@@ -1,9 +1,12 @@
 package com.keltron.dogbreeder.services.impl;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,8 +18,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.keltron.dogbreeder.dto.DogBreederRegistrationApplicationDto;
 import com.keltron.dogbreeder.dto.DogBreederRegistrationApplicationResubmissionDto;
+import com.keltron.dogbreeder.entity.DogBreederApplicationDocument;
 import com.keltron.dogbreeder.entity.DogBreederRegistrationApplication;
 import com.keltron.dogbreeder.entity.DogBreederRegistrationApplicationResubmission;
+import com.keltron.dogbreeder.repository.DocumentTypeRepository;
 import com.keltron.dogbreeder.repository.DogBreederApplicationDocumentRepository;
 import com.keltron.dogbreeder.repository.DogBreederApplicationStatusMasterRepository;
 import com.keltron.dogbreeder.repository.DogBreederBreedRepository;
@@ -27,6 +32,7 @@ import com.keltron.dogbreeder.repository.DogBreederRegistrationApplicationReposi
 import com.keltron.dogbreeder.repository.DogBreederRegistrationApplicationResubmissionRepository;
 import com.keltron.utility.constants.ApplicationStatus;
 import com.keltron.utility.jpa.entity.ApplicationStatusMaster;
+import com.keltron.utility.jpa.entity.DocumentType;
 import com.keltron.utility.jpa.entity.Users;
 import com.keltron.utility.jpa.repository.UsersRepository;
 import com.keltron.utility.manage.service.abs.AbstractJpaService;
@@ -68,6 +74,9 @@ public class DogBreederRegistrationApplicationServiceImpl
 
     @Autowired
     private DogBreederApplicationDocumentRepository documentRepository;
+
+    @Autowired
+    private DocumentTypeRepository documentTypeRepository;
 
     @Autowired
     private UsersRepository usersRepository;
@@ -190,6 +199,42 @@ public class DogBreederRegistrationApplicationServiceImpl
 
         if (!DRAFT_STATUS_CODE.equalsIgnoreCase(application.getStatus().getStatusCode())) {
             throw new RuntimeException("Only Draft applications can be submitted.");
+        }
+
+        // Mandatory documents validation before submission
+        List<DocumentType> mandatoryDocTypes =
+                documentTypeRepository.findByEntityScopeIgnoreCaseAndMandatoryTrueAndActiveTrue("DOG_BREEDER");
+
+        List<DogBreederApplicationDocument> uploadedDocs =
+                documentRepository.findByApplication_IdOrderByIdAsc(applicationId);
+
+        Set<Long> uploadedDocTypeIds = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getId())
+                .collect(Collectors.toSet());
+
+        Set<String> uploadedCodes = uploadedDocs.stream()
+                .filter(d -> d.getDocumentType() != null && d.getDocumentType().getCode() != null && d.getFilePath() != null && !d.getFilePath().isBlank())
+                .map(d -> d.getDocumentType().getCode().toUpperCase())
+                .collect(Collectors.toSet());
+
+        List<String> missingDocNames = new ArrayList<>();
+        for (DocumentType mt : mandatoryDocTypes) {
+            if (!uploadedDocTypeIds.contains(mt.getId()) && !uploadedCodes.contains(mt.getCode().toUpperCase())) {
+                missingDocNames.add(mt.getName());
+            }
+        }
+
+        if (!uploadedCodes.contains("PAN_CARD") && !uploadedDocTypeIds.contains(32L)) {
+            if (!missingDocNames.contains("PAN Card")) {
+                missingDocNames.add("PAN Card");
+            }
+        }
+
+        if (!missingDocNames.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Mandatory document(s) missing: " + String.join(", ", missingDocNames));
         }
 
         ApplicationStatus fromStatus = parseApplicationStatus(application);

@@ -27,6 +27,9 @@ public class AnimalSpecies extends AbstractEntity {
 
     @Column(name = "is_active")
     private Boolean isActive = true;
+    
+    @Column(name = "parent_id")
+    private Long parentId;
 
     @Override
     public <K extends AbstractDto> void copyFromDTO(K dto) {
@@ -35,6 +38,7 @@ public class AnimalSpecies extends AbstractEntity {
         this.id = animalDto.getId();
         this.speciesName = animalDto.getSpeciesName();
         this.isActive = animalDto.getIsActive();
+        this.parentId = animalDto.getParentId();
     }
 
     @Override
@@ -45,6 +49,7 @@ public class AnimalSpecies extends AbstractEntity {
         dto.setId(id);
         dto.setSpeciesName(speciesName);
         dto.setIsActive(isActive);
+        dto.setParentId(parentId);
 
         return dto;
     }

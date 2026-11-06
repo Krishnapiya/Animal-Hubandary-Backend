@@ -33,6 +33,8 @@ public class DogBreederRegistrationInspectionDto extends AbstractDto {
     private String recommendation;
 
     private String reportRemarks;
+
+    private Boolean inspectionDateVisible;
    
 
     @SuppressWarnings("unchecked")

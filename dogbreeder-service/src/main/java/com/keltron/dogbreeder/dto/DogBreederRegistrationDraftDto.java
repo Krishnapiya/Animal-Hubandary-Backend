@@ -14,6 +14,7 @@ public class DogBreederRegistrationDraftDto {
     private String districtName;
 
     private String breederName;
+    private String panNumber;
     private String addressLine1;
     private String addressLine2;
     private String city;

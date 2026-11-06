@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.keltron.citizen.services.impl.ComplaintInvestigationServiceImpl;
 import com.keltron.citizen.dto.ComplaintInvestigationDto;
@@ -69,10 +70,26 @@ public class ComplaintRegistrationController {
     }
 
     @GetMapping("/list/all")
-    public ResponseEntity<AbstractResponse> list() {
+    public ResponseEntity<AbstractResponse> list(
+            @RequestParam(
+                    name = "status",
+                    required = false)
+            String status) {
 
         return new ResponseBuilder()
-                .withData(serviceImpl.getComplaints())
+                .withData(serviceImpl.getComplaints(status))
+                .build();
+    }
+
+    @GetMapping("/my-complaints")
+    public ResponseEntity<AbstractResponse> myComplaints(
+            @RequestParam(
+                    name = "status",
+                    required = false)
+            String status) {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.getMyComplaints(status))
                 .build();
     }
 
@@ -138,7 +155,19 @@ public class ComplaintRegistrationController {
                         investigationService.scheduleInvestigation(
                                 id,
                                 request.getInvestigationDate(),
-                                request.getInvestigationRemarks()))
+                                request.getInvestigationRemarks(),
+                                request.getInvestigationDateVisible()))
+                .build();
+    }
+
+    @PatchMapping("/toggle-visibility/{id}")
+    public ResponseEntity<AbstractResponse> toggleVisibility(
+            @PathVariable Long id,
+            @RequestParam(name = "visible", required = false) Boolean visible) {
+
+        return new ResponseBuilder()
+                .withData(
+                        investigationService.toggleVisibility(id, visible))
                 .build();
     }
     // ============================================

@@ -1,6 +1,7 @@
 package com.keltron.petshop.dto;
 
 import java.math.BigDecimal;
+import java.util.regex.Pattern;
 
 import org.springframework.http.HttpMethod;
 
@@ -21,6 +22,7 @@ public class PetShopDetailDto extends AbstractDto {
     private Long applicationId;
     private String shopName;
     private String ownerName;
+    private String panNumber;
     private String addressLine1;
     private String addressLine2;
     private String city;
@@ -30,6 +32,7 @@ public class PetShopDetailDto extends AbstractDto {
     private BigDecimal latitude;
     private BigDecimal longitude;
     private String registrationDetails;
+    
 
     @Override
     public PetShopDetail toEntity() {
@@ -40,6 +43,7 @@ public class PetShopDetailDto extends AbstractDto {
         entity.setApplicationId(applicationId);
         entity.setShopName(shopName);
         entity.setOwnerName(ownerName);
+        entity.setPanNumber(panNumber);
         entity.setAddressLine1(addressLine1);
         entity.setAddressLine2(addressLine2);
         entity.setCity(city);

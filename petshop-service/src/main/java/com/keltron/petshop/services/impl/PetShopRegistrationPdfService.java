@@ -12,6 +12,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import com.lowagie.text.Phrase;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +47,27 @@ import com.lowagie.text.pdf.PdfWriter;
 @Service
 public class PetShopRegistrationPdfService {
 
+    private static final Font CERT_NO_FONT =
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
+    private static final Font FORM_II_FONT =
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+    private static final Font RULES_FONT =
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
+    private static final Font CERT_TITLE_FONT =
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13);
+    private static final Font DECLARATION_FONT =
+            FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 10.5f);
+    private static final Font DECLARATION_BOLD_FONT =
+            FontFactory.getFont(FontFactory.HELVETICA_BOLDOBLIQUE, 10.5f);
+    private static final Font CONDITION_FONT =
+            FontFactory.getFont(FontFactory.HELVETICA, 10f);
+    private static final Font FOOTER_BOLD_FONT =
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10f);
+    private static final Font FOOTER_NORMAL_FONT =
+            FontFactory.getFont(FontFactory.HELVETICA, 9.5f);
+    private static final Font SEAL_FONT =
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8.5f);
+
     private static final Font TITLE_FONT =
             FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
 
@@ -63,6 +89,425 @@ public class PetShopRegistrationPdfService {
 
     @Value("${petshop.document.upload-root:}")
     private String configuredUploadRoot;
+
+    /**
+     * Generates a blank 3-page Pet Shop Inspection Report format PDF.
+     * Reproduces the official layout of pages 1-3 of the reference inspection report.
+     * Page 1: General Information & Infrastructure Assessment.
+     * Page 2: Animal Housing Conditions, Animal Health and Welfare, Documentation Verification.
+     * Page 3: Observations, Deficiencies Noted, Remarks, Signature block.
+     *
+     * @return PDF bytes of the blank report format
+     */
+    /**
+     * Generates the official Pet Shop Certificate of Registration PDF (matching Form II / Page 4).
+     */
+    public byte[] generateCertificatePdf(
+            String certNumber,
+            PetShopRegistrationViewDto dto,
+            LocalDate issueDate) {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            Document document = new Document(PageSize.A4, 45, 45, 45, 40);
+            PdfWriter writer = PdfWriter.getInstance(document, out);
+            writer.setPageEvent(new WatermarkPageEvent());
+
+            document.open();
+
+            String applicantName = value(dto.getOwnerName());
+            String applicantAddress = formatAddress(dto);
+            String shopLocation = formatShopLocation(dto);
+            String permittedAnimals = extractPermittedAnimals(dto.getAnimals());
+            String formattedDate = issueDate != null
+                    ? issueDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+                    : LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+
+            // 1. Certificate Number
+            Paragraph certNo = new Paragraph("No - " + certNumber, CERT_NO_FONT);
+            certNo.setAlignment(Element.ALIGN_LEFT);
+            certNo.setSpacingAfter(18);
+            document.add(certNo);
+
+            // 2. Heading
+            Paragraph formII = new Paragraph("Form II", FORM_II_FONT);
+            formII.setAlignment(Element.ALIGN_CENTER);
+            formII.setSpacingAfter(4);
+            document.add(formII);
+
+            Paragraph rules = new Paragraph("[See Rules 3(7) and 4(5)]", RULES_FONT);
+            rules.setAlignment(Element.ALIGN_CENTER);
+            rules.setSpacingAfter(4);
+            document.add(rules);
+
+            Paragraph title = new Paragraph("Certificate of Registration of Pet Shop", CERT_TITLE_FONT);
+            title.setAlignment(Element.ALIGN_CENTER);
+            title.setSpacingAfter(20);
+            document.add(title);
+
+            // 3. Declaration Paragraph
+            Paragraph declaration = new Paragraph();
+            declaration.setAlignment(Element.ALIGN_JUSTIFIED);
+            declaration.setLeading(16f);
+            declaration.setSpacingAfter(16);
+
+            declaration.add(new Phrase("A Certificate of Registration is provisionally granted to ", DECLARATION_FONT));
+            declaration.add(new Phrase(applicantName + ", " + applicantAddress, DECLARATION_BOLD_FONT));
+            declaration.add(new Phrase(", to establish a pet shop as provided in the Prevention of Cruelty to Animals (Pet Shop) Rules, 2018.", DECLARATION_FONT));
+            document.add(declaration);
+
+            // 4. Conditions 1 - 7
+            String[] conditions = {
+                "1. The location of the pet shop is at " + shopLocation + ".",
+                "2. The owner of the pet shop is permitted to deal with the following pet animals: " + permittedAnimals + ".",
+                "3. The owner of the pet shop shall abide by the provisions of the Prevention of Cruelty to Animals Act, 1960, and the rules and notifications made and issued thereunder.",
+                "4. The owner of the pet shop shall submit an annual report in compliance with clause (a) of sub-rule (1) of rule 12 of the aforesaid rules for the year ending 31 December to reach the undersigned before the 31 January of the succeeding year.",
+                "5. The certificate shall be displayed prominently in the pet shop.",
+                "6. The certificate is non-transferable.",
+                "7. The Certificate shall be valid up to five years from the date of issue of this Certificate, and a renewal application should be submitted thirty days prior to the expiry date."
+            };
+
+            for (String cond : conditions) {
+                Paragraph p = new Paragraph(cond, CONDITION_FONT);
+                p.setAlignment(Element.ALIGN_JUSTIFIED);
+                p.setLeading(14f);
+                p.setSpacingAfter(8);
+                document.add(p);
+            }
+
+            // 5. Signature Section
+            Paragraph space = new Paragraph(" ");
+            space.setSpacingBefore(30);
+            document.add(space);
+
+            PdfPTable sigTable = new PdfPTable(2);
+            sigTable.setWidthPercentage(100);
+            sigTable.setWidths(new float[]{45f, 55f});
+
+            // Left Cell: Date
+            PdfPCell leftCell = new PdfPCell();
+            leftCell.setBorder(PdfPCell.NO_BORDER);
+            leftCell.setVerticalAlignment(Element.ALIGN_TOP);
+            Paragraph datePara = new Paragraph("Date: " + formattedDate, FOOTER_BOLD_FONT);
+            leftCell.addElement(datePara);
+            sigTable.addCell(leftCell);
+
+            // Right Cell: Legitimate Issuing Authority
+            PdfPCell rightCell = new PdfPCell();
+            rightCell.setBorder(PdfPCell.NO_BORDER);
+            rightCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+
+            Paragraph authority = new Paragraph("Signature and Seal of State Animal Welfare Board", FOOTER_NORMAL_FONT);
+            Paragraph subAuth = new Paragraph("(Member Secretary-Kerala State)", FOOTER_NORMAL_FONT);
+
+            rightCell.addElement(authority);
+            rightCell.addElement(subAuth);
+
+            sigTable.addCell(rightCell);
+            document.add(sigTable);
+
+            document.close();
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate Pet Shop Certificate PDF", e);
+        }
+    }
+
+    public String formatShopLocation(PetShopRegistrationViewDto dto) {
+        StringBuilder sb = new StringBuilder();
+        if (dto.getAddressLine1() != null && !dto.getAddressLine1().isBlank() && !"-".equals(dto.getAddressLine1())) {
+            sb.append(dto.getAddressLine1().trim());
+        }
+        if (dto.getAddressLine2() != null && !dto.getAddressLine2().isBlank() && !"-".equals(dto.getAddressLine2())) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(dto.getAddressLine2().trim());
+        }
+        if (dto.getCity() != null && !dto.getCity().isBlank() && !"-".equals(dto.getCity())) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(dto.getCity().trim());
+        }
+        return sb.length() > 0 ? sb.toString() : formatAddress(dto);
+    }
+
+    public String extractPermittedAnimals(List<PetShopProposedAnimalDto> animals) {
+        if (animals == null || animals.isEmpty()) {
+            return "cats, birds, and exotic pets";
+        }
+        List<String> speciesList = animals.stream()
+                .map(a -> {
+                    if (a.getSpecies() != null && a.getSpecies().getName() != null && !a.getSpecies().getName().isBlank()) {
+                        return a.getSpecies().getName().trim().toLowerCase();
+                    }
+                    if (a.getCustomSpeciesName() != null && !a.getCustomSpeciesName().isBlank()) {
+                        return a.getCustomSpeciesName().trim().toLowerCase();
+                    }
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (speciesList.isEmpty()) {
+            return "cats, birds, and exotic pets";
+        }
+        if (speciesList.size() == 1) {
+            return speciesList.get(0);
+        }
+        if (speciesList.size() == 2) {
+            return speciesList.get(0) + " and " + speciesList.get(1);
+        }
+        return String.join(", ", speciesList.subList(0, speciesList.size() - 1))
+                + ", and " + speciesList.get(speciesList.size() - 1);
+    }
+
+    public byte[] generateInspectionReportFormatPdf() {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            Document document = new Document(PageSize.A4, 36, 36, 30, 30);
+            PdfWriter writer = PdfWriter.getInstance(document, out);
+            writer.setPageEvent(new WatermarkPageEvent());
+
+            document.open();
+
+            // ==========================================
+            // PAGE 1: General Information & Infrastructure Assessment
+            // ==========================================
+            Font reportTitleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13, Font.UNDERLINE);
+            Paragraph title = new Paragraph("PET SHOP VERIFICATION REPORT", reportTitleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            title.setSpacingAfter(14);
+            document.add(title);
+
+            Paragraph genInfoTitle = new Paragraph("1. General Information", BOLD_FONT);
+            genInfoTitle.setSpacingAfter(8);
+            document.add(genInfoTitle);
+
+            String[] genInfoFields = {
+                "Name of Pet Shop:",
+                "Address:",
+                "Name of Owner/Licensee:",
+                "Contact Number:",
+                "Date of Inspection:",
+                "Time of Inspection:",
+                "Name & Designation of Inspecting Veterinary Surgeon:"
+            };
+
+            for (String field : genInfoFields) {
+                Paragraph p = new Paragraph("•   " + field, NORMAL_FONT);
+                p.setSpacingAfter(6);
+                document.add(p);
+            }
+
+            Paragraph infraTitle = new Paragraph("2. Infrastructure Assessment", BOLD_FONT);
+            infraTitle.setSpacingBefore(14);
+            infraTitle.setSpacingAfter(8);
+            document.add(infraTitle);
+
+            PdfPTable infraTable = new PdfPTable(5);
+            infraTable.setWidthPercentage(100);
+            infraTable.setWidths(new float[]{36f, 13f, 17f, 17f, 17f});
+
+            infraTable.addCell(formatHeaderCell("Parameter", Element.ALIGN_CENTER));
+            infraTable.addCell(formatHeaderCell("Good", Element.ALIGN_CENTER));
+            infraTable.addCell(formatHeaderCell("Satisfactory", Element.ALIGN_CENTER));
+            infraTable.addCell(formatHeaderCell("Not Satisfactory", Element.ALIGN_CENTER));
+            infraTable.addCell(formatHeaderCell("Remarks", Element.ALIGN_CENTER));
+
+            String[] infraParams = {
+                "Adequate floor space",
+                "Proper ventilation",
+                "Adequate lighting",
+                "Cleanliness and sanitation",
+                "Waste disposal system",
+                "Fire safety arrangements"
+            };
+
+            for (String param : infraParams) {
+                PdfPCell paramCell = new PdfPCell(new Paragraph(param, NORMAL_FONT));
+                paramCell.setPadding(6);
+                paramCell.setMinimumHeight(28);
+                paramCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                infraTable.addCell(paramCell);
+
+                for (int c = 0; c < 4; c++) {
+                    PdfPCell blankCell = new PdfPCell(new Paragraph("", NORMAL_FONT));
+                    blankCell.setMinimumHeight(28);
+                    infraTable.addCell(blankCell);
+                }
+            }
+            document.add(infraTable);
+
+            // ==========================================
+            // PAGE 2: Animal Housing Conditions, Animal Health and Welfare, Documentation Verification
+            // ==========================================
+            document.newPage();
+
+            Paragraph housingTitle = new Paragraph("3. Animal Housing Conditions", BOLD_FONT);
+            housingTitle.setSpacingAfter(8);
+            document.add(housingTitle);
+
+            PdfPTable housingTable = new PdfPTable(5);
+            housingTable.setWidthPercentage(100);
+            housingTable.setWidths(new float[]{36f, 13f, 17f, 17f, 17f});
+
+            housingTable.addCell(formatHeaderCell("Parameter", Element.ALIGN_CENTER));
+            housingTable.addCell(formatHeaderCell("Good", Element.ALIGN_CENTER));
+            housingTable.addCell(formatHeaderCell("Satisfactory", Element.ALIGN_CENTER));
+            housingTable.addCell(formatHeaderCell("Not Satisfactory", Element.ALIGN_CENTER));
+            housingTable.addCell(formatHeaderCell("Remarks", Element.ALIGN_CENTER));
+
+            String[] housingParams = {
+                "Species-wise segregation",
+                "Adequate cage/enclosure size",
+                "Clean drinking water available",
+                "Adequate feeding arrangements",
+                "Protection from extreme weather",
+                "Overstocking absent"
+            };
+
+            for (String param : housingParams) {
+                PdfPCell paramCell = new PdfPCell(new Paragraph(param, NORMAL_FONT));
+                paramCell.setPadding(6);
+                paramCell.setMinimumHeight(28);
+                paramCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                housingTable.addCell(paramCell);
+
+                for (int c = 0; c < 4; c++) {
+                    PdfPCell blankCell = new PdfPCell(new Paragraph("", NORMAL_FONT));
+                    blankCell.setMinimumHeight(28);
+                    housingTable.addCell(blankCell);
+                }
+            }
+            document.add(housingTable);
+
+            Paragraph healthTitle = new Paragraph("4. Animal Health and Welfare", BOLD_FONT);
+            healthTitle.setSpacingBefore(14);
+            healthTitle.setSpacingAfter(8);
+            document.add(healthTitle);
+
+            String[] healthFields = {
+                "Total number of animals present:",
+                "Species maintained:",
+                "General health status of animals:",
+                "Evidence of disease/injury: Yes / No",
+                "Isolation facility for sick animals: Yes / No",
+                "Vaccination records available: Yes / No",
+                "Deworming records available: Yes / No",
+                "Veterinary treatment records maintained: Yes / No"
+            };
+
+            for (String field : healthFields) {
+                Paragraph p = new Paragraph("•   " + field, NORMAL_FONT);
+                p.setSpacingAfter(6);
+                document.add(p);
+            }
+
+            Paragraph docTitle = new Paragraph("5. Documentation Verification", BOLD_FONT);
+            docTitle.setSpacingBefore(14);
+            docTitle.setSpacingAfter(8);
+            document.add(docTitle);
+
+            PdfPTable docTable = new PdfPTable(3);
+            docTable.setWidthPercentage(100);
+            docTable.setWidths(new float[]{50f, 25f, 25f});
+
+            docTable.addCell(formatHeaderCell("Document", Element.ALIGN_LEFT));
+            docTable.addCell(formatHeaderCell("Available", Element.ALIGN_CENTER));
+            docTable.addCell(formatHeaderCell("Not Available", Element.ALIGN_CENTER));
+
+            String[] docParams = {
+                "Animal purchase/source records",
+                "Health records",
+                "Mortality records",
+                "Veterinary care records"
+            };
+
+            for (String docParam : docParams) {
+                PdfPCell paramCell = new PdfPCell(new Paragraph(docParam, NORMAL_FONT));
+                paramCell.setPadding(6);
+                paramCell.setMinimumHeight(28);
+                paramCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                docTable.addCell(paramCell);
+
+                for (int c = 0; c < 2; c++) {
+                    PdfPCell blankCell = new PdfPCell(new Paragraph("", NORMAL_FONT));
+                    blankCell.setMinimumHeight(28);
+                    docTable.addCell(blankCell);
+                }
+            }
+            document.add(docTable);
+
+            // ==========================================
+            // PAGE 3: Observations, Deficiencies, Remarks, Signatures
+            // ==========================================
+            document.newPage();
+
+            Paragraph obsTitle = new Paragraph("6. Observations", BOLD_FONT);
+            obsTitle.setSpacingAfter(6);
+            document.add(obsTitle);
+            document.add(formatWritingLines(4, 22f));
+
+            Paragraph defTitle = new Paragraph("7. Deficiencies Noted (if any)", BOLD_FONT);
+            defTitle.setSpacingBefore(14);
+            defTitle.setSpacingAfter(6);
+            document.add(defTitle);
+            document.add(formatWritingLines(3, 22f));
+
+            Paragraph remTitle = new Paragraph("8. Remarks", BOLD_FONT);
+            remTitle.setSpacingBefore(14);
+            remTitle.setSpacingAfter(6);
+            document.add(remTitle);
+            document.add(formatWritingLines(3, 22f));
+
+            Paragraph sigSpace = new Paragraph(" ");
+            sigSpace.setSpacingBefore(40);
+            document.add(sigSpace);
+
+            PdfPTable sigTable = new PdfPTable(2);
+            sigTable.setWidthPercentage(100);
+            sigTable.setWidths(new float[]{60f, 40f});
+
+            PdfPCell leftSig = new PdfPCell();
+            leftSig.setBorder(PdfPCell.NO_BORDER);
+            leftSig.addElement(new Paragraph("Signature of Inspecting Veterinary Surgeon", BOLD_FONT));
+            Paragraph datePara = new Paragraph("Date:", BOLD_FONT);
+            datePara.setSpacingBefore(45);
+            leftSig.addElement(datePara);
+            sigTable.addCell(leftSig);
+
+            PdfPCell rightSig = new PdfPCell();
+            rightSig.setBorder(PdfPCell.NO_BORDER);
+            sigTable.addCell(rightSig);
+
+            document.add(sigTable);
+
+            document.close();
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate pet shop inspection report format PDF", e);
+        }
+    }
+
+    private PdfPCell formatHeaderCell(String text, int align) {
+        PdfPCell cell = new PdfPCell(new Paragraph(text, BOLD_FONT));
+        cell.setHorizontalAlignment(align);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setPadding(5);
+        return cell;
+    }
+
+    private PdfPTable formatWritingLines(int count, float lineHeight) {
+        PdfPTable table = new PdfPTable(1);
+        table.setWidthPercentage(100);
+        for (int i = 0; i < count; i++) {
+            PdfPCell cell = new PdfPCell(new Paragraph(" ", NORMAL_FONT));
+            cell.setMinimumHeight(lineHeight);
+            cell.setBorder(PdfPCell.BOTTOM);
+            cell.setBorderColor(new java.awt.Color(200, 200, 200));
+            cell.setBorderWidth(0.5f);
+            table.addCell(cell);
+        }
+        return table;
+    }
 
     @Autowired
     private PetShopRegistrationApplicationServiceImpl applicationService;
@@ -467,7 +912,10 @@ public class PetShopRegistrationPdfService {
         if (animals != null && !animals.isEmpty()) {
             for (PetShopProposedAnimalDto animal : animals) {
                 table.addCell(normalCell(speciesName(animal)));
-                table.addCell(normalCell(value(animal.getBreed())));
+                String breedDisplay = (animal.getCustomBreedName() != null && !animal.getCustomBreedName().isBlank())
+                        ? ("Other".equalsIgnoreCase(animal.getBreed()) ? animal.getBreed() + " - " + animal.getCustomBreedName().trim() : animal.getCustomBreedName().trim())
+                        : value(animal.getBreed());
+                table.addCell(normalCell(breedDisplay));
                 table.addCell(normalCell(String.valueOf(animal.getQuantity())));
                 table.addCell(normalCell(value(animal.getAgeDescription())));
                 table.addCell(normalCell(value(animal.getPriceOffered())));
@@ -710,7 +1158,7 @@ public class PetShopRegistrationPdfService {
         return name.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
     }
 
-    private String formatAddress(PetShopRegistrationViewDto dto) {
+    public String formatAddress(PetShopRegistrationViewDto dto) {
         return value(dto.getAddressLine1())
                 + ", "
                 + value(dto.getAddressLine2())
@@ -726,11 +1174,15 @@ public class PetShopRegistrationPdfService {
         }
 
         DropdownPayload<Long> species = animal.getSpecies();
-        if (species == null) {
-            return "-";
+        String baseName = species != null ? value(species.getName()) : "-";
+
+        if (animal.getCustomSpeciesName() != null && !animal.getCustomSpeciesName().isBlank()) {
+            return "Other".equalsIgnoreCase(baseName)
+                    ? baseName + " - " + animal.getCustomSpeciesName().trim()
+                    : animal.getCustomSpeciesName().trim();
         }
 
-        return value(species.getName());
+        return baseName;
     }
 
     private void addCenter(Document document, String text, Font font) throws Exception {

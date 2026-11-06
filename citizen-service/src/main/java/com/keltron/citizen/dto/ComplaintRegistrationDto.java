@@ -38,6 +38,8 @@ public class ComplaintRegistrationDto extends AbstractDto {
 
     private String documentPath;
 
+    private Boolean investigationDateVisible;
+
     // Status
     private Long statusId;
     private DropdownPayload<Long> status;

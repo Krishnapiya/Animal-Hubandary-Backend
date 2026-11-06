@@ -120,6 +120,16 @@ public class AnimalSpeciesController {
                 .withData(service.delete(id))
                 .build();
     }
+    
+    @GetMapping("/{speciesId}/breeds")
+    public ResponseEntity<AbstractResponse> findBreeds(
+            @PathVariable Long speciesId) {
+
+        return new ResponseBuilder()
+                .withData(
+                        service.findBreedsBySpeciesId(speciesId))
+                .build();
+    }
 
     @GetMapping("/test")
     public String test() {

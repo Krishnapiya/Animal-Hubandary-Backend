@@ -1,5 +1,8 @@
 package com.keltron.admin.services.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 
 import com.keltron.utility.beans.dto.*;
@@ -13,4 +16,13 @@ public class AnimalSpeciesServiceImpl extends AbstractJpaService<
         Long,
         AnimalSpeciesRepository,
         AnimalSpecies> {
+	public List<AnimalSpeciesDto> findBreedsBySpeciesId(Long speciesId) {
+
+        List<AnimalSpecies> breeds =
+                repository.findByParentIdAndIsActiveTrue(speciesId);
+
+        return breeds.stream()
+                .map(AnimalSpecies::toDTO)
+                .collect(Collectors.toList());
+    }
 }

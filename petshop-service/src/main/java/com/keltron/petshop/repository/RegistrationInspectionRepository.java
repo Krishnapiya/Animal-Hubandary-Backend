@@ -12,7 +12,7 @@ public interface RegistrationInspectionRepository
                 Long> {
 
     Optional<RegistrationInspection>
-            findByApplication_Id(
+            findFirstByApplication_IdOrderByIdDesc(
                     Long applicationId);
 
     List<RegistrationInspection>

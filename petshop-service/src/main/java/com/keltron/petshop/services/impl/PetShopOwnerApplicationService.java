@@ -2,6 +2,7 @@ package com.keltron.petshop.services.impl;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -31,6 +32,8 @@ import lombok.RequiredArgsConstructor;
 public class PetShopOwnerApplicationService {
 
     private static final String DRAFT_STATUS = "DRAFT";
+    private static final Pattern PAN_PATTERN =
+            Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
 
     private final RegistrationApplicationRepository applicationRepository;
     private final ApplicationStatusMasterRepository statusRepository;
@@ -51,6 +54,11 @@ public class PetShopOwnerApplicationService {
         }
         if (isBlank(dto.getOwnerName())) {
             errors.put("ownerName", "Owner name is required");
+        }
+        if (isBlank(dto.getPanNumber())) {
+            errors.put("panNumber", "PAN Card Number is required");
+        } else if (!PAN_PATTERN.matcher(dto.getPanNumber().trim().toUpperCase()).matches()) {
+            errors.put("panNumber", "Invalid PAN Card Number format (e.g. ABCDE1234F)");
         }
         if (isBlank(dto.getShopAddressLine1())) {
             errors.put("shopAddressLine1", "Shop address is required");
@@ -92,6 +100,7 @@ public class PetShopOwnerApplicationService {
         }
         draft.setShopName(detail.getShopName());
         draft.setOwnerName(detail.getOwnerName());
+        draft.setPanNumber(detail.getPanNumber());
         draft.setShopAddressLine1(detail.getAddressLine1());
         draft.setShopAddressLine2(detail.getAddressLine2());
         draft.setFatherOrHusbandName(detail.getFatherOrHusbandName());
@@ -148,6 +157,7 @@ public class PetShopOwnerApplicationService {
         detail.setApplicationId(application.getId());
         detail.setShopName(dto.getShopName().trim());
         detail.setOwnerName(dto.getOwnerName().trim());
+        detail.setPanNumber(dto.getPanNumber() != null ? dto.getPanNumber().trim().toUpperCase() : null);
         detail.setAddressLine1(resolveLine(dto.getShopAddressLine1()));
         detail.setAddressLine2(dto.getShopAddressLine2());
         detail.setFatherOrHusbandName(dto.getFatherOrHusbandName());

@@ -1,11 +1,14 @@
 package com.keltron.dogbreeder.dto;
 
+import java.math.BigDecimal;
+
 import org.springframework.http.HttpMethod;
 
 import com.keltron.dogbreeder.entity.DogBreederBreed;
 import com.keltron.dogbreeder.entity.DogBreederDetail;
 import com.keltron.utility.ValidationUtils;
 import com.keltron.utility.beans.abs.AbstractDto;
+import com.keltron.utility.jpa.entity.AnimalSpecies;
 import com.keltron.utility.responses.payload.DropdownPayload;
 
 import lombok.Getter;
@@ -21,6 +24,8 @@ public class DogBreederBreedDto extends AbstractDto {
 
     private DropdownPayload<Long> dogBreederDetail;
 
+    private DropdownPayload<Long> species;
+
     private String breedName;
 
     private Integer dogCount;
@@ -28,6 +33,29 @@ public class DogBreederBreedDto extends AbstractDto {
     private String ageDescription;
 
     private String gender;
+
+    private String customSpeciesName;
+
+    private String customBreedName;
+
+    private String description;
+
+    private BigDecimal priceOffered;
+
+    private Integer displayOrder = 0;
+
+    public Long getSpeciesId() {
+        return species != null ? species.getId() : null;
+    }
+
+    public void setSpeciesId(Long speciesId) {
+        if (speciesId != null) {
+            if (species == null) {
+                species = new DropdownPayload<>();
+            }
+            species.setId(speciesId);
+        }
+    }
 
     /**
      * Convert DTO to Entity
@@ -38,34 +66,22 @@ public class DogBreederBreedDto extends AbstractDto {
 
         DogBreederBreed entity = new DogBreederBreed();
 
-        /*
-         * ID
-         */
         if (id != null) {
             entity.setId(id);
         }
 
-        /*
-         * Breed name
-         */
         if (breedName != null) {
             entity.setBreedName(
                     breedName.trim()
             );
         }
 
-        /*
-         * Dog count
-         */
         if (dogCount != null) {
             entity.setDogCount(dogCount);
         } else {
             entity.setDogCount(0);
         }
 
-        /*
-         * Dog breeder detail
-         */
         if (dogBreederDetail != null
                 && dogBreederDetail.getId() != null) {
 
@@ -76,9 +92,6 @@ public class DogBreederBreedDto extends AbstractDto {
             );
         }
 
-        /*
-         * Age description
-         */
         if (ageDescription != null) {
             entity.setAgeDescription(
                     ageDescription.trim()
@@ -87,16 +100,50 @@ public class DogBreederBreedDto extends AbstractDto {
             entity.setAgeDescription(null);
         }
 
-        /*
-         * IMPORTANT:
-         * Save gender to entity
-         */
         if (gender != null) {
             entity.setGender(
                     gender.trim().toUpperCase()
             );
         } else {
             entity.setGender(null);
+        }
+
+        if (species != null && species.getId() != null) {
+            AnimalSpecies animalSpecies = new AnimalSpecies();
+            animalSpecies.setId(species.getId());
+            entity.setSpecies(animalSpecies);
+        } else {
+            entity.setSpecies(null);
+        }
+
+        if (ValidationUtils.isValid(customSpeciesName)) {
+            entity.setCustomSpeciesName(customSpeciesName.trim());
+        } else {
+            entity.setCustomSpeciesName(null);
+        }
+
+        if (ValidationUtils.isValid(customBreedName)) {
+            entity.setCustomBreedName(customBreedName.trim());
+        } else {
+            entity.setCustomBreedName(null);
+        }
+
+        if (ValidationUtils.isValid(description)) {
+            entity.setDescription(description.trim());
+        } else {
+            entity.setDescription(null);
+        }
+
+        if (priceOffered != null) {
+            entity.setPriceOffered(priceOffered);
+        } else {
+            entity.setPriceOffered(null);
+        }
+
+        if (displayOrder != null) {
+            entity.setDisplayOrder(displayOrder);
+        } else {
+            entity.setDisplayOrder(0);
         }
 
         return entity;
@@ -184,6 +231,46 @@ public class DogBreederBreedDto extends AbstractDto {
                         dogCount
                 );
             }
+
+            /*
+             * Custom species name length
+             */
+            if (customSpeciesName != null && customSpeciesName.trim().length() > 120) {
+                addError(
+                        "custom_species_name",
+                        "Custom species name cannot exceed 120 characters"
+                );
+            }
+
+            /*
+             * Custom breed name length
+             */
+            if (customBreedName != null && customBreedName.trim().length() > 120) {
+                addError(
+                        "custom_breed_name",
+                        "Custom breed name cannot exceed 120 characters"
+                );
+            }
+
+            /*
+             * Price offered validation
+             */
+            if (priceOffered != null && priceOffered.compareTo(BigDecimal.ZERO) < 0) {
+                addError(
+                        "price_offered",
+                        "Price offered cannot be negative"
+                );
+            }
+
+            /*
+             * Display order validation
+             */
+            if (displayOrder != null && displayOrder < 0) {
+                addError(
+                        "display_order",
+                        "Display order cannot be negative"
+                );
+            }
         }
 
         /*
@@ -267,6 +354,46 @@ public class DogBreederBreedDto extends AbstractDto {
                 addError(
                         "dog_count",
                         dogCount
+                );
+            }
+
+            /*
+             * Custom species name length
+             */
+            if (customSpeciesName != null && customSpeciesName.trim().length() > 120) {
+                addError(
+                        "custom_species_name",
+                        "Custom species name cannot exceed 120 characters"
+                );
+            }
+
+            /*
+             * Custom breed name length
+             */
+            if (customBreedName != null && customBreedName.trim().length() > 120) {
+                addError(
+                        "custom_breed_name",
+                        "Custom breed name cannot exceed 120 characters"
+                );
+            }
+
+            /*
+             * Price offered validation
+             */
+            if (priceOffered != null && priceOffered.compareTo(BigDecimal.ZERO) < 0) {
+                addError(
+                        "price_offered",
+                        "Price offered cannot be negative"
+                );
+            }
+
+            /*
+             * Display order validation
+             */
+            if (displayOrder != null && displayOrder < 0) {
+                addError(
+                        "display_order",
+                        "Display order cannot be negative"
                 );
             }
         }

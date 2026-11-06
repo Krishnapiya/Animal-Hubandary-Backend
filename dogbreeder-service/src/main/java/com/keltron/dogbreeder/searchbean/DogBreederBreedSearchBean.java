@@ -20,6 +20,8 @@ public class DogBreederBreedSearchBean extends AbstractSearchBean {
 
     private List<Long> dogBreederDetailId;
 
+    private Long speciesId;
+
     private String breedName;
 
     private Integer dogCount;
@@ -33,7 +35,8 @@ public class DogBreederBreedSearchBean extends AbstractSearchBean {
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
         "id",
         "breedName",
-        "dogCount"
+        "dogCount",
+        "displayOrder"
     );
 
     public DogBreederBreedSearchBean() {

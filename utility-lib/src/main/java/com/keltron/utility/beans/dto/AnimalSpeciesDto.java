@@ -16,6 +16,7 @@ public class AnimalSpeciesDto extends AbstractDto {
     private Long id;
     private String speciesName;
     private Boolean isActive;
+    private Long parentId;
 
     @Override
     public AnimalSpecies toEntity() {
@@ -25,6 +26,7 @@ public class AnimalSpeciesDto extends AbstractDto {
         entity.setId(id);
         entity.setSpeciesName(speciesName);
         entity.setIsActive(isActive);
+        entity.setParentId(parentId);
 
         return entity;
     }

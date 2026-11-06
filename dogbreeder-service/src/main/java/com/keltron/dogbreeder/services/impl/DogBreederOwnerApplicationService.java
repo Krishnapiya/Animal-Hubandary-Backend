@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -41,6 +42,8 @@ public class DogBreederOwnerApplicationService {
     private static final String DRAFT_STATUS = "DRAFT";
     private static final String ENTITY_TYPE = "DOG_BREEDER";
     private static final String APPLICATION_KIND = "NEW";
+    private static final Pattern PAN_PATTERN =
+            Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
 
     private final DogBreederRegistrationApplicationRepository applicationRepository;
     private final DogBreederApplicationStatusMasterRepository statusRepository;
@@ -65,6 +68,12 @@ public class DogBreederOwnerApplicationService {
 
         if (isBlank(dto.getBreederName())) {
             errors.put("breederName", "Breeder name is required");
+        }
+
+        if (isBlank(dto.getPanNumber())) {
+            errors.put("panNumber", "PAN Card Number is required");
+        } else if (!PAN_PATTERN.matcher(dto.getPanNumber().trim().toUpperCase()).matches()) {
+            errors.put("panNumber", "Invalid PAN Card Number format (e.g. ABCDE1234F)");
         }
 
         if (isBlank(dto.getAddressLine1())) {
@@ -118,6 +127,7 @@ public class DogBreederOwnerApplicationService {
         }
 
         draft.setBreederName(detail.getBreederName());
+        draft.setPanNumber(detail.getPanNumber());
         draft.setAddressLine1(detail.getAddressLine1());
         draft.setAddressLine2(detail.getAddressLine2());
         draft.setCity(detail.getCity());
@@ -172,6 +182,7 @@ public class DogBreederOwnerApplicationService {
             draft.put("dogBreederDetail", detail.toDTO());
 
             draft.put("breederName", detail.getBreederName());
+            draft.put("panNumber", detail.getPanNumber());
             draft.put("addressLine1", detail.getAddressLine1());
             draft.put("addressLine2", detail.getAddressLine2());
             draft.put("city", detail.getCity());
@@ -191,7 +202,7 @@ public class DogBreederOwnerApplicationService {
             }
 
             List<DogBreederBreed> breeds =
-                    breedRepository.findByDogBreederDetail_Id(detail.getId());
+                    breedRepository.findByDogBreederDetail_IdOrderByDisplayOrderAscIdAsc(detail.getId());
 
             if (breeds != null && !breeds.isEmpty()) {
                 currentStep = 3;
@@ -280,6 +291,7 @@ public class DogBreederOwnerApplicationService {
 
         detail.setApplicationId(application.getId());
         detail.setBreederName(dto.getBreederName().trim());
+        detail.setPanNumber(dto.getPanNumber() != null ? dto.getPanNumber().trim().toUpperCase() : null);
         detail.setAddressLine1(dto.getAddressLine1().trim());
         detail.setAddressLine2(dto.getAddressLine2());
         detail.setCity(dto.getCity());

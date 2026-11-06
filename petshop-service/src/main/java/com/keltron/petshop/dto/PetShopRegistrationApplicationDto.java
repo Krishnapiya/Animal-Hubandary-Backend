@@ -22,6 +22,7 @@ public class PetShopRegistrationApplicationDto extends AbstractDto {
     private String applicationNumber;
     private String entityType;
     private String applicationKind;
+    private String applicationType;
     private String shopName;
     private Long statusId;
     private Long applicantUserId;
@@ -35,6 +36,9 @@ public class PetShopRegistrationApplicationDto extends AbstractDto {
     private LocalDateTime forwardedToCvoAt;
     private DropdownPayload<Long> status;
     private DropdownPayload<Integer> district;
+    private String certificateNumber;
+    private Boolean hasCertificate;
+    private Long certificateId;
 
     @Override
     public PetShopRegistrationApplication toEntity() {

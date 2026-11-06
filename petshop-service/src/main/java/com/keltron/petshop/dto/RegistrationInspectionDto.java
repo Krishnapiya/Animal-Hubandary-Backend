@@ -29,6 +29,8 @@ public class RegistrationInspectionDto extends AbstractDto {
 
     private String recommendation;
 
+    private Boolean inspectionDateVisible;
+
 //    private String status;
 
  

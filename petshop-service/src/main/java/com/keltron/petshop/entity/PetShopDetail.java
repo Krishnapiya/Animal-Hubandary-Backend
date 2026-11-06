@@ -35,6 +35,9 @@ public class PetShopDetail extends AbstractEntity {
 
     @Column(name = "owner_name", nullable = false)
     private String ownerName;
+    
+    @Column(name = "pan_number", nullable = false, length = 10)
+    private String panNumber;
 
     @Column(name = "address_line1", nullable = false)
     private String addressLine1;
@@ -85,6 +88,12 @@ public class PetShopDetail extends AbstractEntity {
 
         if (ValidationUtils.isValid(petShopDetailDto.getOwnerName()))
             this.ownerName = petShopDetailDto.getOwnerName();
+        
+        if (ValidationUtils.isValid(petShopDetailDto.getPanNumber())) {
+            this.panNumber = petShopDetailDto.getPanNumber()
+                    .trim()
+                    .toUpperCase();
+        }
 
         if (ValidationUtils.isValid(petShopDetailDto.getAddressLine1()))
             this.addressLine1 = petShopDetailDto.getAddressLine1();
@@ -114,6 +123,7 @@ public class PetShopDetail extends AbstractEntity {
         dto.setId(id);
         dto.setApplicationId(applicationId);
         dto.setShopName(shopName);
+        dto.setPanNumber(panNumber);
         dto.setOwnerName(ownerName);
         dto.setAddressLine1(addressLine1);
         dto.setAddressLine2(addressLine2);

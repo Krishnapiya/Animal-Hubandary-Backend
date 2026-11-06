@@ -47,7 +47,25 @@ public class ComplaintInvestigationController {
                         serviceImpl.scheduleInvestigation(
                                 complaintId,
                                 request.getInvestigationDate(),
-                                request.getInvestigationRemarks()))
+                                request.getInvestigationRemarks(),
+                                request.getInvestigationDateVisible()))
+                .build();
+    }
+
+    // =========================================================
+    // TOGGLE VISIBILITY
+    // =========================================================
+
+    @PatchMapping("/toggle-visibility/{complaintId}")
+    public ResponseEntity<AbstractResponse> toggleVisibility(
+            @PathVariable Long complaintId,
+            @RequestParam(name = "visible", required = false) Boolean visible) {
+
+        return new ResponseBuilder()
+                .withData(
+                        serviceImpl.toggleVisibility(
+                                complaintId,
+                                visible))
                 .build();
     }
 

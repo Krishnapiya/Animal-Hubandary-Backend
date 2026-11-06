@@ -40,6 +40,13 @@ public class DogBreederApplicationDocumentController extends AbstractController{
 	 @Autowired
 	    private DogBreederApplicationDocumentServiceImpl serviceImpl;
 
+	    @GetMapping("/types")
+	    public ResponseEntity<AbstractResponse> getDocumentTypes() {
+	        return new ResponseBuilder()
+	                .withData(serviceImpl.getDocumentTypes())
+	                .build();
+	    }
+
 	    @PostMapping("/save")
 	    public ResponseEntity<AbstractResponse> save(
 	            @Valid @RequestBody Request<DogBreederApplicationDocumentDto> request) {

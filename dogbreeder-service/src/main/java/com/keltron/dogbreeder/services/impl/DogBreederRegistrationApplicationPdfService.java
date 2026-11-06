@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -200,8 +201,20 @@ public class DogBreederRegistrationApplicationPdfService {
         addText(document, "Subject : Application for Grant / Renewal of Dog Breeder Licence", BOLD_FONT);
         addBlank(document);
 
+        Map<String, Object> breederMap = extractMap(data.get("breederDetails"));
+
         String ownerName = value(data.get("breederName"));
+        if ("-".equals(ownerName)) {
+            ownerName = value(breederMap.get("breederName"));
+        }
+        String panNumber = value(breederMap.get("panNumber"));
+        if ("-".equals(panNumber)) {
+            panNumber = value(data.get("panNumber"));
+        }
         String address = formatAddress(data);
+        if ("-, -, - - -".equals(address) || address.startsWith("-, -")) {
+            address = formatAddress(breederMap);
+        }
 
         String introduction = "Sir,\n\n"
                 + "I/We " + ownerName + " r/o " + address
@@ -213,6 +226,7 @@ public class DogBreederRegistrationApplicationPdfService {
 
         // Questionnaires
         addQuestion(document, "1. Name and address of the Dog Breeding Establishment :", value(data.get("establishmentName")) + "\n" + address);
+        addQuestion(document, "1A. PAN Card Number :", panNumber);
         addQuestion(document, "2. Name and address of the Breeder / Owner :", ownerName + "\n" + address);
         addQuestion(document, "3. Telephone Number (Mobile / Landline) :", value(data.get("contactMobile")));
         addQuestion(document, "4. Infrastructure and Accommodation Details :", value(data.get("infrastructureDetails")));
@@ -513,6 +527,20 @@ public class DogBreederRegistrationApplicationPdfService {
             return objectMapper.convertValue(obj, new TypeReference<List<Map<String, Object>>>() {});
         } catch (Exception e) {
             return new ArrayList<>();
+        }
+    }
+
+    private Map<String, Object> extractMap(Object obj) {
+        if (obj == null) return new HashMap<>();
+        if (obj instanceof Map<?, ?> map) {
+            Map<String, Object> result = new HashMap<>();
+            map.forEach((k, v) -> result.put(String.valueOf(k), v));
+            return result;
+        }
+        try {
+            return objectMapper.convertValue(obj, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            return new HashMap<>();
         }
     }
 

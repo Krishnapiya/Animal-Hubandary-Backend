@@ -32,15 +32,23 @@ import jakarta.validation.Valid;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-
-// ******** CHANGED ********
 @RequestMapping("/petshop/auth/application-document")
-
-// ******** CHANGED ********
 public class PetShopApplicationDocumentController extends AbstractController {
 
     @Autowired
     private PetShopApplicationDocumentServiceImpl serviceImpl;
+
+    // ===========================================================
+    // DOCUMENT TYPES
+    // ===========================================================
+
+    @GetMapping("/types")
+    public ResponseEntity<AbstractResponse> getDocumentTypes() {
+
+        return new ResponseBuilder()
+                .withData(serviceImpl.getDocumentTypes())
+                .build();
+    }
 
     // ===========================================================
     // SAVE
@@ -214,7 +222,6 @@ public class PetShopApplicationDocumentController extends AbstractController {
     public ResponseEntity<Resource> viewDocument(
             HttpServletRequest request)
             throws IOException {
-    	
 
         String path = request.getRequestURI();
 

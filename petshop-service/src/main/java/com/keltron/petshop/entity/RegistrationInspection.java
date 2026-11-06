@@ -52,6 +52,9 @@ public class RegistrationInspection extends AbstractEntity {
     @Column(name = "recommendation")
     private String recommendation;
 
+    @Column(name = "inspection_date_visible")
+    private Boolean inspectionDateVisible = false;
+
 //    @Column(name = "status")
 //    private String status;
 
@@ -87,6 +90,11 @@ public class RegistrationInspection extends AbstractEntity {
         this.recommendation =
                 inspectionDto.getRecommendation();
 
+        if (inspectionDto.getInspectionDateVisible() != null) {
+            this.inspectionDateVisible =
+                    inspectionDto.getInspectionDateVisible();
+        }
+
 //        this.status =
 //                inspectionDto.getStatus();
 
@@ -106,6 +114,7 @@ public class RegistrationInspection extends AbstractEntity {
         }
 
         dto.setInspectionDate(inspectionDate);
+        dto.setInspectionDateVisible(inspectionDateVisible);
         dto.setInspectionRemarks(inspectionRemarks);
         dto.setInspectionReport(inspectionReport);
         dto.setRecommendation(recommendation);
